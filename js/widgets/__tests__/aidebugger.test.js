@@ -96,7 +96,7 @@ describe("AIDebuggerWidget", () => {
                 const blockMap = {
                     id1: ["id1", ["number", null]]
                 };
-                expect(debuggerWidget._getNumericValue("id1", blockMap)).toBeUndefined();
+                expect(debuggerWidget._getNumericValue("id1", blockMap)).toBeNull();
             });
         });
 

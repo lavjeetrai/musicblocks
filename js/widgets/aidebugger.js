@@ -1269,7 +1269,7 @@ function AIDebuggerWidget() {
         const blockType = Array.isArray(block[1]) ? block[1][0] : block[1];
 
         if (blockType === "number") {
-            return Array.isArray(block[1]) ? block[1][1]?.value : block[1];
+            return Array.isArray(block[1]) ? (block[1][1]?.value ?? null) : block[1];
         }
         return null;
     };
@@ -1288,7 +1288,7 @@ function AIDebuggerWidget() {
         const blockType = Array.isArray(block[1]) ? block[1][0] : block[1];
 
         if (blockType === "text" && Array.isArray(block[1])) {
-            return block[1][1]?.value;
+            return block[1][1]?.value ?? null;
         }
         return null;
     };
@@ -1307,7 +1307,7 @@ function AIDebuggerWidget() {
         const blockType = Array.isArray(block[1]) ? block[1][0] : block[1];
 
         if (blockType === "drumname" && Array.isArray(block[1])) {
-            return block[1][1]?.value;
+            return block[1][1]?.value ?? null;
         }
         return null;
     };
@@ -1326,7 +1326,7 @@ function AIDebuggerWidget() {
         const blockType = Array.isArray(block[1]) ? block[1][0] : block[1];
 
         if ((blockType === "namedbox" || blockType === "namedarg") && Array.isArray(block[1])) {
-            return block[1][1]?.value;
+            return block[1][1]?.value ?? null;
         }
         return null;
     };
