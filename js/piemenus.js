@@ -3181,7 +3181,6 @@ const piemenuIntervals = (block, selectedInterval) => {
 
     let isInitialized = false;
     // Add function to each main menu for show/hide sub menus
-    // TODO: Add all tabs to each interval
     const __setupAction = (i, activeTabs) => {
         that._intervalNameWheel.navItems[i].navigateFunction = () => {
             for (let l = 0; l < labels.length; l++) {
