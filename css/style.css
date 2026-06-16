@@ -11,7 +11,9 @@ input[type="range"] {
   width: 250px;
 }
 
-
+input[type="range"]:focus {
+  outline: none;
+}
 
 input[type="range"]:not(.pitchSlider)::-webkit-slider-runnable-track {
   width: 10px;

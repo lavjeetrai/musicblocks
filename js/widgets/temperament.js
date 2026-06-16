@@ -162,14 +162,14 @@ function TemperamentWidget() {
         cell.style.height = cell.style.width;
         cell.style.minHeight = cell.style.height;
         cell.style.maxHeight = cell.style.height;
-        cell.classList.add("temperament-selector-cell");
+        cell.style.backgroundColor = platformColor.selectorBackground;
 
         cell.onmouseover = function () {
-            this.classList.add("temperament-selector-hover");
+            this.style.backgroundColor = platformColor.selectorBackgroundHOVER;
         };
 
         cell.onmouseout = function () {
-            this.classList.remove("temperament-selector-hover");
+            this.style.backgroundColor = platformColor.selectorBackground;
         };
 
         return cell;

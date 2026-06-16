@@ -125,8 +125,7 @@ requirejs.config({
                 "activity/logo",
                 "activity/blocks",
                 "activity/turtles",
-                "activity/recorder",
-                "activity/abc-parser"
+                "activity/recorder"
             ],
             exports: "Activity"
         },
@@ -162,7 +161,6 @@ requirejs.config({
         "activity": "js",
         "activity/recorder": "js/activity/recorder",
         "activity/exporters": "js/activity/exporters",
-        "activity/abc-parser": "js/activity/abc-parser",
         "easeljs.min": "lib/easeljs.min",
         "tweenjs.min": "lib/tweenjs.min",
         "prefixfree.min": "lib/prefixfree.min",

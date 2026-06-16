@@ -44,8 +44,7 @@ const loadLoadStart = () => {
         globalActivity: null,
         _THIS_IS_MUSIC_BLOCKS_: true,
         LEADING: 0,
-        MYDEFINES: [],
-        setupActivityAbcParser: () => {}
+        MYDEFINES: []
     };
 
     vm.createContext(sandbox);

@@ -1,8 +1,8 @@
 /**
- * @file This contains the prototype of the Oscilloscope Widget.
+ * @file This contains the prototype of the JavaScript Editor Widget.
  * @author Saksham Mrig
  *
- * @copyright 2020 Saksham Mrig
+ * @copyright 2020 Saksham Mirg
  *
  * @license
  * This program is free software; you can redistribute it and/or modify it under the terms of the
