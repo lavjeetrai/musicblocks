@@ -89,6 +89,8 @@ const {
     hexToRGB,
     hex2rgb,
     format,
+    sleep,
+    ab2str,
     delayExecution,
     closeWidgets,
     closeBlkWidgets,
@@ -520,6 +522,53 @@ describe("Utility Functions (logic-only)", () => {
             warnSpy.mockRestore();
         });
     });
+    describe("sleep()", () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+        it("resolves after the specified duration", async () => {
+            const promise = sleep(1000);
+            jest.advanceTimersByTime(1000);
+            await expect(promise).resolves.toBeUndefined();
+        });
+    });
+
+    describe("ab2str()", () => {
+        beforeAll(() => {
+            if (typeof global.TextDecoder === "undefined") {
+                const { TextDecoder, TextEncoder } = require("util");
+                global.TextDecoder = TextDecoder;
+                global.TextEncoder = TextEncoder;
+            }
+        });
+
+        it("decodes an ArrayBuffer using utf-8", () => {
+            const str = "Hello, world!";
+            const encoder = new TextEncoder();
+            const buffer = encoder.encode(str).buffer;
+
+            expect(ab2str(buffer)).toBe(str);
+        });
+
+        it("decodes an empty ArrayBuffer", () => {
+            const buffer = new ArrayBuffer(0);
+            expect(ab2str(buffer)).toBe("");
+        });
+
+        it("decodes using a specific encoding if provided", () => {
+            // Note: Node's util.TextDecoder doesn't support many encodings
+            // But we can test that passing 'utf-8' explicitly works
+            const str = "Testing encoding";
+            const encoder = new TextEncoder();
+            const buffer = encoder.encode(str).buffer;
+
+            expect(ab2str(buffer, "utf-8")).toBe(str);
+        });
+    });
+
     describe("delayExecution()", () => {
         beforeEach(() => {
             jest.useFakeTimers();

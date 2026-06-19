@@ -1395,6 +1395,26 @@ function displayMsg(/*blocks, text*/) {
 // hex2rgb() moved to js/utils/utils-logic.js
 
 /**
+ * Promisified sleep function.
+ *
+ * @param {number} ms - The number of milliseconds to sleep.
+ * @returns {Promise<void>} A promise that resolves after the specified time.
+ */
+let sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Decodes an array buffer and returns a string based on specific encoding.
+ *
+ * @param {ArrayBuffer} buffer - The array buffer to decode.
+ * @param {string} encoding - The encoding standard. Defaults to `utf-8`.
+ * @returns {string} The decoded string.
+ */
+let ab2str = (buffer, encoding = "utf-8") => {
+    const decoder = new TextDecoder(encoding);
+    return decoder.decode(buffer);
+};
+
+/**
  * Delays execution using a promise.
  *
  * @param {number} duration - Duration of the delay in milliseconds.
@@ -1508,6 +1528,8 @@ if (typeof module !== "undefined" && module.exports) {
         extractProjectDataFromHTML,
         _,
         format,
+        sleep,
+        ab2str,
         delayExecution,
         closeWidgets,
         closeBlkWidgets,
