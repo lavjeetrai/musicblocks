@@ -25,12 +25,12 @@ const PhraseMakerUI = {
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
         const floatingWindowsDiv = document.getElementById("floatingWindows");
-        const windowFrameElements = floatingWindowsDiv.querySelectorAll(".windowFrame");
+        const windowFrameElements = floatingWindowsDiv.getElementsByClassName("windowFrame");
 
         for (let i = 0; i < windowFrameElements.length; i++) {
             const windowFrame = windowFrameElements[i];
-            const wfWinBody = windowFrame.querySelector(".wfWinBody");
-            const wfbWidget = windowFrame.querySelector(".wfbWidget");
+            const wfWinBody = windowFrame.getElementsByClassName("wfWinBody")[0];
+            const wfbWidget = windowFrame.getElementsByClassName("wfbWidget")[0];
             const totalWidth = parseFloat(window.getComputedStyle(windowFrame).width);
             const totalHeight = parseFloat(window.getComputedStyle(windowFrame).height);
             const maxWidth = screenWidth * 0.8;
