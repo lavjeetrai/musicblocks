@@ -743,12 +743,12 @@ function TemperamentWidget() {
 
         for (let i = 0; i < menuLabels.length; i++) {
             const th = document.createElement("th");
-            th.id = "menuLabels";
+            th.className = "menuLabels";
             th.textContent = menuLabels[i];
             menuTr.appendChild(th);
         }
 
-        const menuItems = document.querySelectorAll("#menuLabels");
+        const menuItems = document.querySelectorAll(".menuLabels");
         for (let i = 0; i < menuLabels.length; i++) {
             menuItems[i].style.background = platformColor.labelColor;
             menuItems[i].style.height = 30 + "px";
@@ -924,7 +924,7 @@ function TemperamentWidget() {
 
         for (let i = 0; i < editMenus.length; i++) {
             const td = document.createElement("td");
-            td.id = "editMenus";
+            td.className = "editMenus";
             td.textContent = editMenus[i];
             editOctaveTr.appendChild(td);
         }
@@ -935,7 +935,7 @@ function TemperamentWidget() {
         userEditTd.id = "userEdit";
         userEditTr.appendChild(userEditTd);
         editOctaveTbody.appendChild(userEditTr);
-        const menuItems = document.querySelectorAll("#editMenus");
+        const menuItems = document.querySelectorAll(".editMenus");
         for (let i = 0; i < editMenus.length; i++) {
             menuItems[i].style.background = platformColor.selectorBackground;
             menuItems[i].style.height = 30 + "px";
