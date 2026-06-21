@@ -3963,7 +3963,7 @@ class Activity {
                 primaryTurtle.inTrash = false;
                 primaryTurtle.container.visible = true;
 
-                // FIX: Restore the companion turtle if one exists.
+                // Restore the companion turtle if one exists.
                 // sendStackToTrash() in blocks.js (~line 7257) sets BOTH the primary
                 // and companion turtle to inTrash=true / visible=false when trashing a
                 // start/drum block. Without this mirror restore, the companion stays
