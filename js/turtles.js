@@ -608,8 +608,22 @@ Turtles.TurtlesModel = class {
     turtleCount() {
         let count = 0;
         const totalTurtles = this.getTurtleCount();
+
+        const firstCompanionFor = new Array(totalTurtles);
         for (let t = 0; t < totalTurtles; t++) {
-            if (this.companionTurtle(t) === t && !this.getTurtle(t).inTrash) {
+            const c = this.getTurtle(t).companionTurtle;
+            if (c !== undefined && firstCompanionFor[c] === undefined) {
+                firstCompanionFor[c] = t;
+            }
+        }
+
+        for (let t = 0; t < totalTurtles; t++) {
+            let comp = firstCompanionFor[t];
+            if (comp === undefined) {
+                comp = t;
+            }
+
+            if (comp === t && !this.getTurtle(t).inTrash) {
                 count += 1;
             }
         }
