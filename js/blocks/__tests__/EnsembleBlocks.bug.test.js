@@ -9,8 +9,7 @@
 global._ = msg => msg;
 global.last = arr => (arr.length > 0 ? arr[arr.length - 1] : undefined);
 
-// Extract and test _blockFindTurtle function
-// Since it's not exported, we'll test the behavior by mocking the dependencies
+const { getTargetTurtle, _blockFindTurtle } = require("../EnsembleBlocks");
 
 describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
     let mockActivity;
@@ -53,42 +52,6 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
             }
         };
 
-        // Reconstruct getTargetTurtle function (from EnsembleBlocks.js lines 28-43)
-        const getTargetTurtle = (turtles, targetTurtle) => {
-            targetTurtle = targetTurtle.toString();
-            for (const i in turtles.turtleList) {
-                const turtle = turtles.ithTurtle(i);
-                if (turtle && !turtle.inTrash) {
-                    const turtleName = turtle.name.toString();
-                    if (turtleName === targetTurtle) return i;
-                }
-            }
-            return null; // Returns null if turtle not found
-        };
-
-        // Reconstruct _blockFindTurtle function (from EnsembleBlocks.js lines 45-61)
-        const _blockFindTurtle = (activity, turtle, blk, receivedArg) => {
-            const cblk = activity.blocks.blockList[blk].connections[1];
-            if (cblk === null) {
-                return null;
-            }
-            const targetTurtle = activity.logo.parseArg(
-                activity.logo,
-                turtle,
-                cblk,
-                blk,
-                receivedArg
-            );
-            if (targetTurtle === null) {
-                return null;
-            }
-            const targetTurtleId = getTargetTurtle(activity.turtles, targetTurtle);
-            if (targetTurtleId === null) {
-                return null;
-            }
-            return activity.turtles.getTurtle(targetTurtleId);
-        };
-
         // Mock activity object
         mockActivity = {
             blocks: {
@@ -102,14 +65,11 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
                     return "NonExistentTurtle"; // This turtle doesn't exist
                 })
             },
-            turtles: mockTurtles,
-            _blockFindTurtle // Attach the function for testing
+            turtles: mockTurtles
         };
     });
 
     test("_blockFindTurtle returns null (not throws) when target turtle is not found", () => {
-        const { _blockFindTurtle } = mockActivity;
-
         // After fix: should return null instead of throwing
         expect(() => {
             _blockFindTurtle(mockActivity, 0, 0, null);
@@ -124,23 +84,12 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
         mockActivity.logo.parseArg = jest.fn(() => "Percusion"); // Typo: missing 's'
 
         // After fix: should return null instead of throwing
-        const result = mockActivity._blockFindTurtle(mockActivity, 0, 0, null);
+        const result = _blockFindTurtle(mockActivity, 0, 0, null);
         expect(result).toBeNull();
     });
 
     test("Scenario: getTargetTurtle returns null when turtle not in list", () => {
         // Verify that getTargetTurtle returns null for non-existent turtle
-        const getTargetTurtle = (turtles, targetTurtle) => {
-            targetTurtle = targetTurtle.toString();
-            for (const i in turtles.turtleList) {
-                const turtle = turtles.ithTurtle(i);
-                if (turtle && !turtle.inTrash) {
-                    const turtleName = turtle.name.toString();
-                    if (turtleName === targetTurtle) return i;
-                }
-            }
-            return null;
-        };
 
         const result = getTargetTurtle(mockTurtles, "InvalidTurtle");
         expect(result).toBeNull();

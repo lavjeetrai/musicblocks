@@ -1365,5 +1365,5 @@ function setupEnsembleBlocks(activity) {
 }
 
 if (typeof module !== "undefined" && module.exports) {
-    module.exports = { setupEnsembleBlocks, getTargetTurtle };
+    module.exports = { setupEnsembleBlocks, getTargetTurtle, _blockFindTurtle };
 }
