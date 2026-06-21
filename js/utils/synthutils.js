@@ -1773,7 +1773,7 @@ function Synth() {
                     console.debug("Error triggering note:", e);
                 }
             } else {
-                // ── Perf fix: fast-path for notes with no real graph-level effect nodes ──
+                // ── Performance optimization: fast-path for notes with no real graph-level effect nodes ──
                 // doPartials and doPortamento only mutate synth properties in-place and
                 // do NOT require new audio graph nodes.  Skipping disconnect/reconnect
                 // for every plain note eliminates per-note audio-graph rewiring, which
