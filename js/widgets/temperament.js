@@ -741,33 +741,35 @@ function TemperamentWidget() {
         tablebody.id = "tablebody";
         notesGraph.appendChild(tablebody);
 
+        const menuItems = [];
         for (let i = 0; i < menuLabels.length; i++) {
             const th = document.createElement("th");
-            th.id = "menuLabels";
+            th.className = "menuLabels";
             th.textContent = menuLabels[i];
+            
+            // Apply styles directly during creation
+            th.style.background = platformColor.labelColor;
+            th.style.height = 30 + "px";
+            th.style.textAlign = "center";
+            th.style.fontWeight = "bold";
+            
             menuTr.appendChild(th);
+            menuItems.push(th);
         }
 
-        const menuItems = document.querySelectorAll("#menuLabels");
-        for (let i = 0; i < menuLabels.length; i++) {
-            menuItems[i].style.background = platformColor.labelColor;
-            menuItems[i].style.height = 30 + "px";
-            menuItems[i].style.textAlign = "center";
-            menuItems[i].style.fontWeight = "bold";
-            if (isCustomTemperament(this.inTemperament)) {
-                menuItems[0].style.width = 40 + "px";
-                menuItems[1].style.width = 120 + "px";
-                menuItems[2].style.width = 120 + "px";
-                menuItems[3].style.width = 140 + "px";
-            } else {
-                menuItems[0].style.width = 40 + "px";
-                menuItems[1].style.width = 40 + "px";
-                menuItems[2].style.width = 60 + "px";
-                menuItems[3].style.width = 120 + "px";
-                menuItems[4].style.width = 50 + "px";
-                menuItems[5].style.width = 100 + "px";
-                menuItems[6].style.width = 95 + "px";
-            }
+        if (isCustomTemperament(this.inTemperament)) {
+            menuItems[0].style.width = 40 + "px";
+            menuItems[1].style.width = 120 + "px";
+            menuItems[2].style.width = 120 + "px";
+            menuItems[3].style.width = 140 + "px";
+        } else {
+            menuItems[0].style.width = 40 + "px";
+            menuItems[1].style.width = 40 + "px";
+            menuItems[2].style.width = 60 + "px";
+            menuItems[3].style.width = 120 + "px";
+            menuItems[4].style.width = 50 + "px";
+            menuItems[5].style.width = 100 + "px";
+            menuItems[6].style.width = 95 + "px";
         }
         const trGraph = document.createElement("tr");
         const tdGraph = document.createElement("td");
@@ -922,11 +924,20 @@ function TemperamentWidget() {
 
         const editMenus = [_("equal"), _("ratios"), _("arbitrary"), _("octave space")];
 
+        const menuItems = [];
         for (let i = 0; i < editMenus.length; i++) {
             const td = document.createElement("td");
-            td.id = "editMenus";
+            td.className = "editMenus";
             td.textContent = editMenus[i];
+            
+            // Apply styles directly during creation
+            td.style.background = platformColor.selectorBackground;
+            td.style.height = 30 + "px";
+            td.style.textAlign = "center";
+            td.style.fontWeight = "bold";
+            
             editOctaveTr.appendChild(td);
+            menuItems.push(td);
         }
 
         const userEditTr = document.createElement("tr");
@@ -935,13 +946,6 @@ function TemperamentWidget() {
         userEditTd.id = "userEdit";
         userEditTr.appendChild(userEditTd);
         editOctaveTbody.appendChild(userEditTr);
-        const menuItems = document.querySelectorAll("#editMenus");
-        for (let i = 0; i < editMenus.length; i++) {
-            menuItems[i].style.background = platformColor.selectorBackground;
-            menuItems[i].style.height = 30 + "px";
-            menuItems[i].style.textAlign = "center";
-            menuItems[i].style.fontWeight = "bold";
-        }
 
         menuItems[0].style.background = platformColor.selectorBackground || "#c8C8C8";
         that.equalEdit();
