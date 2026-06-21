@@ -6297,10 +6297,6 @@ class Activity {
             );
 
             img.onload = () => {
-                // FIX: createjs.Bitmap.getBounds() returns null for any Bitmap
-                // not added to a live EaselJS stage → TypeError: null.x crash.
-                // doSVG() returns "" on blank canvas → naturalWidth = 0 → guaranteed crash.
-                // Fix: use img.naturalWidth directly + plain offscreen canvas (no EaselJS needed).
                 try {
                     if (!img.naturalWidth || !img.naturalHeight) {
                         // Blank canvas — doSVG() returned empty string, nothing to thumbnail.
