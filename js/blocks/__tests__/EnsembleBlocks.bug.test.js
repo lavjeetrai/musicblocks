@@ -9,8 +9,10 @@
 global._ = msg => msg;
 global.last = arr => (arr.length > 0 ? arr[arr.length - 1] : undefined);
 
+const { _blockFindTurtle } = require("../EnsembleBlocks");
+
 // Extract and test _blockFindTurtle function
-// Since it's not exported, we'll test the behavior by mocking the dependencies
+// We will test the behavior by mocking the dependencies
 
 describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
     let mockActivity;
@@ -66,29 +68,6 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
             return null; // Returns null if turtle not found
         };
 
-        // Reconstruct _blockFindTurtle function (from EnsembleBlocks.js lines 45-61)
-        const _blockFindTurtle = (activity, turtle, blk, receivedArg) => {
-            const cblk = activity.blocks.blockList[blk].connections[1];
-            if (cblk === null) {
-                return null;
-            }
-            const targetTurtle = activity.logo.parseArg(
-                activity.logo,
-                turtle,
-                cblk,
-                blk,
-                receivedArg
-            );
-            if (targetTurtle === null) {
-                return null;
-            }
-            const targetTurtleId = getTargetTurtle(activity.turtles, targetTurtle);
-            if (targetTurtleId === null) {
-                return null;
-            }
-            return activity.turtles.getTurtle(targetTurtleId);
-        };
-
         // Mock activity object
         mockActivity = {
             blocks: {
@@ -102,14 +81,11 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
                     return "NonExistentTurtle"; // This turtle doesn't exist
                 })
             },
-            turtles: mockTurtles,
-            _blockFindTurtle // Attach the function for testing
+            turtles: mockTurtles
         };
     });
 
     test("_blockFindTurtle returns null (not throws) when target turtle is not found", () => {
-        const { _blockFindTurtle } = mockActivity;
-
         // After fix: should return null instead of throwing
         expect(() => {
             _blockFindTurtle(mockActivity, 0, 0, null);
@@ -124,7 +100,7 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
         mockActivity.logo.parseArg = jest.fn(() => "Percusion"); // Typo: missing 's'
 
         // After fix: should return null instead of throwing
-        const result = mockActivity._blockFindTurtle(mockActivity, 0, 0, null);
+        const result = _blockFindTurtle(mockActivity, 0, 0, null);
         expect(result).toBeNull();
     });
 
