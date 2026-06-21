@@ -313,8 +313,9 @@ class ModeWidget {
 
         // Cache piano key elements to avoid repeated getElementById calls
         this._pianoKeys = [];
+        const children = modePianoDiv.children;
         for (let i = 0; i < 12; i++) {
-            this._pianoKeys[i] = document.getElementById("pkey_" + i);
+            this._pianoKeys[i] = children[i + 1];
         }
 
         const highlightImgs = [

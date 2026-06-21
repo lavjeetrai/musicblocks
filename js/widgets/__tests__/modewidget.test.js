@@ -39,6 +39,9 @@ global.last = arr => arr[arr.length - 1];
 
 // Mock utils
 global.docById = jest.fn().mockImplementation(id => ({
+    ...(id === "modePianoDiv"
+        ? { children: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}] }
+        : {}),
     style: {},
     innerHTML: "",
     appendChild: jest.fn(),
