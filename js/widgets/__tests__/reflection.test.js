@@ -408,6 +408,14 @@ describe("ReflectionMatrix", () => {
             expect(data).toEqual({ algorithm: "new_alg" });
         });
 
+        test("generateNewAlgorithm catches errors", async () => {
+            global.fetch.mockRejectedValue(new Error("Net Error"));
+
+            const data = await reflection.generateNewAlgorithm("some_code");
+
+            expect(data).toEqual({ error: "Failed to send message" });
+        });
+
         test("generateBotReply makes correct API call", async () => {
             global.fetch.mockResolvedValue({
                 json: jest.fn().mockResolvedValue({ response: "AI reply" })
