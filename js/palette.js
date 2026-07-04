@@ -1151,11 +1151,6 @@ class PaletteModel {
         this.blocks = [];
         for (const blk in this.palette.protoList) {
             const block = this.palette.protoList[blk];
-            // Don't show hidden blocks on the menus
-            // But we still make them.
-            // if (block.hidden) {
-            //     continue;
-            // }
 
             // Create a proto block for each palette entry.
             this.blocks.push(this.makeBlockInfo(blk, block, block.name, block.name));
