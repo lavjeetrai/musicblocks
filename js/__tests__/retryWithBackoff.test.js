@@ -194,6 +194,35 @@ describe("retryWithBackoff", () => {
     });
 
     describe("default parameters", () => {
+        it("should use default delayFn (setTimeout wrapper) when not provided", async () => {
+            jest.useFakeTimers();
+
+            let callCount = 0;
+            const onSuccess = jest.fn();
+
+            const promise = retryWithBackoff({
+                check: () => {
+                    callCount++;
+                    return callCount >= 2 ? true : null;
+                },
+                onSuccess,
+                initialDelay: 50
+            });
+
+            // Fast-forward fake timers
+            // We need to wait for the next tick for promises to resolve
+            await Promise.resolve();
+            expect(callCount).toBe(1);
+
+            jest.advanceTimersByTime(50);
+            await promise;
+
+            expect(callCount).toBe(2);
+            expect(onSuccess).toHaveBeenCalled();
+
+            jest.useRealTimers();
+        });
+
         it("should default maxRetries to 20", async () => {
             let callCount = 0;
 
