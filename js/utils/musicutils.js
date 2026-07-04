@@ -5671,7 +5671,6 @@ const scaleDegreeToPitchMapping = (keySignature, scaleDegree, movable, pitch) =>
     let finalScale = [];
     const sd = [];
 
-    // if movable do is present just return the major/perfect tones
     if (movable) {
         finalScale = buildScale(chosenMode[0] + " major")[0];
 
