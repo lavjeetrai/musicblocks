@@ -58,16 +58,16 @@ describe("PluginDialog", () => {
         it("click event resets value and scrolls to 0,0", () => {
             const dialog = new PluginDialog();
             // Set up a mock for value setter, as jsdom restricts setting value on type="file"
-            Object.defineProperty(mockPluginChooser, 'value', {
-                get: jest.fn().mockReturnValue('some/path'),
+            Object.defineProperty(mockPluginChooser, "value", {
+                get: jest.fn().mockReturnValue("some/path"),
                 set: jest.fn(),
                 configurable: true
             });
 
             // Using dispatchEvent to trigger the click listener
-            const clickEvent = new Event('click');
+            const clickEvent = new Event("click");
             // Mock currentTarget
-            Object.defineProperty(clickEvent, 'currentTarget', {
+            Object.defineProperty(clickEvent, "currentTarget", {
                 value: mockPluginChooser
             });
 
@@ -76,7 +76,7 @@ describe("PluginDialog", () => {
             expect(window.scroll).toHaveBeenCalledWith(0, 0);
 
             // Check that the set method of the mock value descriptor was called with empty string
-            const valueSetter = Object.getOwnPropertyDescriptor(mockPluginChooser, 'value').set;
+            const valueSetter = Object.getOwnPropertyDescriptor(mockPluginChooser, "value").set;
             expect(valueSetter).toHaveBeenCalledWith("");
         });
 
@@ -85,13 +85,15 @@ describe("PluginDialog", () => {
             const dialog = new PluginDialog({ onFileSelected });
 
             // Mocking the files array on the input element
-            const mockFile = new File(["dummy content"], "plugin.json", { type: "application/json" });
-            Object.defineProperty(mockPluginChooser, 'files', {
+            const mockFile = new File(["dummy content"], "plugin.json", {
+                type: "application/json"
+            });
+            Object.defineProperty(mockPluginChooser, "files", {
                 value: [mockFile],
                 configurable: true
             });
 
-            const changeEvent = new Event('change');
+            const changeEvent = new Event("change");
             mockPluginChooser.dispatchEvent(changeEvent);
 
             expect(window.scroll).toHaveBeenCalledWith(0, 0);
@@ -102,12 +104,12 @@ describe("PluginDialog", () => {
             const onFileSelected = jest.fn();
             const dialog = new PluginDialog({ onFileSelected });
 
-            Object.defineProperty(mockPluginChooser, 'files', {
+            Object.defineProperty(mockPluginChooser, "files", {
                 value: [],
                 configurable: true
             });
 
-            const changeEvent = new Event('change');
+            const changeEvent = new Event("change");
             mockPluginChooser.dispatchEvent(changeEvent);
 
             expect(window.scroll).toHaveBeenCalledWith(0, 0);
@@ -117,13 +119,15 @@ describe("PluginDialog", () => {
         it("change event scrolls to 0,0 if onFileSelected is not a function", () => {
             const dialog = new PluginDialog({ onFileSelected: "not a function" });
 
-            const mockFile = new File(["dummy content"], "plugin.json", { type: "application/json" });
-            Object.defineProperty(mockPluginChooser, 'files', {
+            const mockFile = new File(["dummy content"], "plugin.json", {
+                type: "application/json"
+            });
+            Object.defineProperty(mockPluginChooser, "files", {
                 value: [mockFile],
                 configurable: true
             });
 
-            const changeEvent = new Event('change');
+            const changeEvent = new Event("change");
             mockPluginChooser.dispatchEvent(changeEvent);
 
             expect(window.scroll).toHaveBeenCalledWith(0, 0);
@@ -149,7 +153,7 @@ describe("PluginDialog", () => {
 
             window.prompt.mockReturnValue(null);
 
-            const clickSpy = jest.spyOn(mockPluginChooser, 'click');
+            const clickSpy = jest.spyOn(mockPluginChooser, "click");
 
             dialog.openPlugin();
 
@@ -173,7 +177,7 @@ describe("PluginDialog", () => {
 
             window.prompt.mockReturnValue("  MyPlugin  ");
 
-            const clickSpy = jest.spyOn(mockPluginChooser, 'click');
+            const clickSpy = jest.spyOn(mockPluginChooser, "click");
 
             dialog.openPlugin();
 
@@ -184,7 +188,7 @@ describe("PluginDialog", () => {
             const dialog = new PluginDialog();
             window.prompt.mockReturnValue("   ");
 
-            const clickSpy = jest.spyOn(mockPluginChooser, 'click');
+            const clickSpy = jest.spyOn(mockPluginChooser, "click");
 
             dialog.openPlugin();
 
