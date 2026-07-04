@@ -72,9 +72,6 @@ const transcribeMidi = async (midi, maxNoteBlocks) => {
     }
 
     let precurssionFlag = false;
-    // console.log("tempoBpm is: ", currentMidiTempoBpm);
-    // console.log("tempo is : ",currentMidi.header.tempos);
-    // console.log("time signatures are: ", currentMidi.header.timeSignatures);
     currentMidi.tracks.forEach((track, trackIndex) => {
         let k = 0;
         if (stopProcessing) return; // Exit if flag is set
@@ -302,10 +299,6 @@ const transcribeMidi = async (midi, maxNoteBlocks) => {
         }
 
         trackCount++;
-        // console.log("current action block: ", currentActionBlock);
-        // console.log("current json: ", jsONON);
-        // console.log("noteblockCount: ", noteblockCount);
-        // console.debug('finished when you see: "block loading finished "');
         document.body.style.cursor = "wait";
     });
 
