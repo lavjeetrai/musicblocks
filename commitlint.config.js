@@ -35,6 +35,7 @@ module.exports = {
         // Keep the summary line readable in `git log --oneline`.
         "header-max-length": [2, "always", 100],
         "body-leading-blank": [2, "always"],
-        "footer-leading-blank": [1, "always"]
+        "footer-leading-blank": [1, "always"],
+        "body-max-line-length": [0, "always", 100]
     }
 };
