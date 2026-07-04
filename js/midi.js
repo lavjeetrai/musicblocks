@@ -249,14 +249,6 @@ const transcribeMidi = async (midi, maxNoteBlocks) => {
                 return ar;
             };
             let obj = getClosestStandardNoteValue((duration * 3) / 8);
-            // let scalingFactor=1;
-            // if(shortestNoteDenominator>32)
-            // scalingFactor=shortestNoteDenominator/32;
-
-            // if(obj[1]>=scalingFactor)
-            // obj[1]=obj[1]/scalingFactor;
-            // else
-            // obj[0]=obj[0]*scalingFactor;
 
             // To get the reduced fraction for 4/2 to 2/1
             obj = getClosestStandardNoteValue(obj[0] / obj[1]);
