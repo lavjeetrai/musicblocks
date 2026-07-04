@@ -7,12 +7,12 @@ describe("setupActivityIdleWatcher", () => {
         // Setup global mocks
         global.createjs = {
             Ticker: {
-                framerate: 60,
-            },
+                framerate: 60
+            }
         };
         global.debugLog = jest.fn();
         global.ErrorHandler = {
-            recoverable: jest.fn(),
+            recoverable: jest.fn()
         };
 
         // Setup mock activity instance
@@ -20,13 +20,13 @@ describe("setupActivityIdleWatcher", () => {
             addEventListener: jest.fn(),
             removeEventListener: jest.fn(),
             turtles: {
-                running: jest.fn().mockReturnValue(false),
+                running: jest.fn().mockReturnValue(false)
             },
             logo: {
-                _alreadyRunning: false,
+                _alreadyRunning: false
             },
             saveLocally: jest.fn(),
-            stageDirty: false,
+            stageDirty: false
         };
 
         jest.useFakeTimers();
@@ -52,11 +52,32 @@ describe("setupActivityIdleWatcher", () => {
             setupActivityIdleWatcher(mockActivity);
             mockActivity._initIdleWatcher();
 
-            expect(mockActivity.addEventListener).toHaveBeenCalledWith(window, "mousemove", mockActivity._resetIdleTimer);
-            expect(mockActivity.addEventListener).toHaveBeenCalledWith(window, "mousedown", mockActivity._resetIdleTimer);
-            expect(mockActivity.addEventListener).toHaveBeenCalledWith(window, "keydown", mockActivity._resetIdleTimer);
-            expect(mockActivity.addEventListener).toHaveBeenCalledWith(window, "touchstart", mockActivity._resetIdleTimer);
-            expect(mockActivity.addEventListener).toHaveBeenCalledWith(window, "wheel", mockActivity._resetIdleTimer, { passive: true });
+            expect(mockActivity.addEventListener).toHaveBeenCalledWith(
+                window,
+                "mousemove",
+                mockActivity._resetIdleTimer
+            );
+            expect(mockActivity.addEventListener).toHaveBeenCalledWith(
+                window,
+                "mousedown",
+                mockActivity._resetIdleTimer
+            );
+            expect(mockActivity.addEventListener).toHaveBeenCalledWith(
+                window,
+                "keydown",
+                mockActivity._resetIdleTimer
+            );
+            expect(mockActivity.addEventListener).toHaveBeenCalledWith(
+                window,
+                "touchstart",
+                mockActivity._resetIdleTimer
+            );
+            expect(mockActivity.addEventListener).toHaveBeenCalledWith(
+                window,
+                "wheel",
+                mockActivity._resetIdleTimer,
+                { passive: true }
+            );
         });
 
         it("throttles framerate when idle threshold is reached", () => {
@@ -71,7 +92,9 @@ describe("setupActivityIdleWatcher", () => {
 
             expect(mockActivity.isAppIdle).toBe(true);
             expect(global.createjs.Ticker.framerate).toBe(1);
-            expect(global.debugLog).toHaveBeenCalledWith(expect.stringContaining("Idle mode: Throttling to 1 FPS to save battery"));
+            expect(global.debugLog).toHaveBeenCalledWith(
+                expect.stringContaining("Idle mode: Throttling to 1 FPS to save battery")
+            );
         });
 
         it("wakes up on user activity", () => {
@@ -125,16 +148,36 @@ describe("setupActivityIdleWatcher", () => {
             setupActivityIdleWatcher(mockActivity);
             mockActivity._initIdleWatcher();
 
-            const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+            const clearIntervalSpy = jest.spyOn(global, "clearInterval");
 
             mockActivity._stopIdleWatcher();
 
             expect(clearIntervalSpy).toHaveBeenCalledWith(expect.any(Number));
-            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(window, "mousemove", expect.any(Function));
-            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(window, "mousedown", expect.any(Function));
-            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(window, "keydown", expect.any(Function));
-            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(window, "touchstart", expect.any(Function));
-            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(window, "wheel", expect.any(Function));
+            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(
+                window,
+                "mousemove",
+                expect.any(Function)
+            );
+            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(
+                window,
+                "mousedown",
+                expect.any(Function)
+            );
+            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(
+                window,
+                "keydown",
+                expect.any(Function)
+            );
+            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(
+                window,
+                "touchstart",
+                expect.any(Function)
+            );
+            expect(mockActivity.removeEventListener).toHaveBeenCalledWith(
+                window,
+                "wheel",
+                expect.any(Function)
+            );
 
             expect(mockActivity._idleWatcherInterval).toBeUndefined();
             expect(mockActivity._resetIdleTimer).toBeUndefined();
@@ -173,7 +216,9 @@ describe("setupActivityIdleWatcher", () => {
 
             jest.advanceTimersByTime(5 * 60 * 1000);
 
-            expect(global.ErrorHandler.recoverable).toHaveBeenCalledWith(testError, { operation: "autoSave" });
+            expect(global.ErrorHandler.recoverable).toHaveBeenCalledWith(testError, {
+                operation: "autoSave"
+            });
         });
     });
 
@@ -182,7 +227,7 @@ describe("setupActivityIdleWatcher", () => {
             setupActivityIdleWatcher(mockActivity);
             mockActivity._initAutoSave();
 
-            const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+            const clearIntervalSpy = jest.spyOn(global, "clearInterval");
 
             mockActivity._stopAutoSave();
 
