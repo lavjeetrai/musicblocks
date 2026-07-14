@@ -1667,30 +1667,29 @@ class TimbreWidget {
 
                     this._setDuoSynthParamVals(this.duoSynthParams[0], this.duoSynthParams[1]);
 
+                    const wrappers = [docById("wrapperS0"), docById("wrapperS1")];
                     for (let i = 0; i < 2; i++) {
-                        document
-                            .getElementById("wrapperS" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = Number(elem.id.slice(-1));
-                                this.duoSynthParams[m] = elem.value;
-                                docById("myRangeS" + m).value = parseFloat(elem.value);
-                                if (m === 0) {
-                                    this._setDuoSynthParamVals(elem.value, this.duoSynthParams[1]);
-                                } else if (m === 1) {
-                                    this._setDuoSynthParamVals(this.duoSynthParams[0], elem.value);
-                                }
+                        wrappers[i].addEventListener("change", event => {
+                            const elem = event.target;
+                            const m = Number(elem.id.slice(-1));
+                            this.duoSynthParams[m] = elem.value;
+                            docById("myRangeS" + m).value = parseFloat(elem.value);
+                            if (m === 0) {
+                                this._setDuoSynthParamVals(elem.value, this.duoSynthParams[1]);
+                            } else if (m === 1) {
+                                this._setDuoSynthParamVals(this.duoSynthParams[0], elem.value);
+                            }
 
-                                docById("myspanS" + m).textContent = elem.value;
-                                this._update(blockValue, elem.value, m);
-                                this.activity.logo.synth.createSynth(
-                                    0,
-                                    this.instrumentName,
-                                    "duosynth",
-                                    this.duoSynthParamVals
-                                );
-                                this._playNote("G4", 1 / 8);
-                            });
+                            docById("myspanS" + m).textContent = elem.value;
+                            this._update(blockValue, elem.value, m);
+                            this.activity.logo.synth.createSynth(
+                                0,
+                                this.instrumentName,
+                                "duosynth",
+                                this.duoSynthParamVals
+                            );
+                            this._playNote("G4", 1 / 8);
+                        });
                     }
                 }
             };
@@ -2474,28 +2473,27 @@ class TimbreWidget {
                         this.clampConnection(n, 3, topOfClamp);
                     }
 
+                    const wrappers = [docById("wrapperFx0"), docById("wrapperFx1")];
                     for (let i = 0; i < 2; i++) {
-                        document
-                            .getElementById("wrapperFx" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = elem.id.slice(-1);
-                                docById("myRangeFx" + m).value = parseFloat(elem.value);
-                                docById("myspanFx" + m).textContent = elem.value;
+                        wrappers[i].addEventListener("change", event => {
+                            const elem = event.target;
+                            const m = elem.id.slice(-1);
+                            docById("myRangeFx" + m).value = parseFloat(elem.value);
+                            docById("myspanFx" + m).textContent = elem.value;
 
-                                if (m === 0) {
-                                    instrumentsEffects[0][this.instrumentName]["tremoloFrequency"] =
-                                        parseFloat(elem.value);
-                                }
+                            if (m === 0) {
+                                instrumentsEffects[0][this.instrumentName]["tremoloFrequency"] =
+                                    parseFloat(elem.value);
+                            }
 
-                                if (m === 1) {
-                                    instrumentsEffects[0][this.instrumentName]["tremoloDepth"] =
-                                        parseFloat(elem.value) / 100;
-                                }
+                            if (m === 1) {
+                                instrumentsEffects[0][this.instrumentName]["tremoloDepth"] =
+                                    parseFloat(elem.value) / 100;
+                            }
 
-                                this._update(blockValue, parseFloat(elem.value), Number(m));
-                                this._playNote("G4", 1 / 8);
-                            });
+                            this._update(blockValue, parseFloat(elem.value), Number(m));
+                            this._playNote("G4", 1 / 8);
+                        });
                     }
                 } else if (effectChosen === "Vibrato") {
                     this.isActive["tremolo"] = false;
@@ -2634,33 +2632,36 @@ class TimbreWidget {
                         this.clampConnection(n, 4, topOfClamp);
                     }
 
+                    const wrappers = [
+                        docById("wrapperFx0"),
+                        docById("wrapperFx1"),
+                        docById("wrapperFx2")
+                    ];
                     for (let i = 0; i < 3; i++) {
-                        document
-                            .getElementById("wrapperFx" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = elem.id.slice(-1);
-                                docById("myRangeFx" + m).value = parseFloat(elem.value);
-                                docById("myspanFx" + m).textContent = elem.value;
+                        wrappers[i].addEventListener("change", event => {
+                            const elem = event.target;
+                            const m = elem.id.slice(-1);
+                            docById("myRangeFx" + m).value = parseFloat(elem.value);
+                            docById("myspanFx" + m).textContent = elem.value;
 
-                                if (m === 0) {
-                                    instrumentsEffects[0][this.instrumentName]["chorusRate"] =
-                                        parseFloat(elem.value);
-                                }
+                            if (m === 0) {
+                                instrumentsEffects[0][this.instrumentName]["chorusRate"] =
+                                    parseFloat(elem.value);
+                            }
 
-                                if (m === 1) {
-                                    instrumentsEffects[0][this.instrumentName]["delayTime"] =
-                                        parseFloat(elem.value);
-                                }
+                            if (m === 1) {
+                                instrumentsEffects[0][this.instrumentName]["delayTime"] =
+                                    parseFloat(elem.value);
+                            }
 
-                                if (m === 2) {
-                                    instrumentsEffects[0][this.instrumentName]["chorusDepth"] =
-                                        parseFloat(elem.value) / 100;
-                                }
+                            if (m === 2) {
+                                instrumentsEffects[0][this.instrumentName]["chorusDepth"] =
+                                    parseFloat(elem.value) / 100;
+                            }
 
-                                this._update(blockValue, elem.value, Number(m));
-                                this._playNote("G4", 1 / 8);
-                            });
+                            this._update(blockValue, elem.value, Number(m));
+                            this._playNote("G4", 1 / 8);
+                        });
                     }
                 } else if (effectChosen === "Phaser") {
                     this.isActive["tremolo"] = false;
@@ -2723,34 +2724,38 @@ class TimbreWidget {
                         this.clampConnection(n, 4, topOfClamp);
                     }
 
+                    const wrappers = [
+                        docById("wrapperFx0"),
+                        docById("wrapperFx1"),
+                        docById("wrapperFx2")
+                    ];
                     for (let i = 0; i < 3; i++) {
-                        document
-                            .getElementById("wrapperFx" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = elem.id.slice(-1);
-                                docById("myRangeFx" + m).value = parseFloat(elem.value);
-                                docById("myspanFx" + m).textContent = elem.value;
+                        wrappers[i].addEventListener("change", event => {
+                            const elem = event.target;
+                            const m = elem.id.slice(-1);
+                            docById("myRangeFx" + m).value = parseFloat(elem.value);
+                            docById("myspanFx" + m).textContent = elem.value;
 
-                                if (m === 0) {
-                                    instrumentsEffects[0][this.instrumentName]["rate"] = parseFloat(
-                                        elem.value
-                                    );
-                                }
+                            if (m === 0) {
+                                instrumentsEffects[0][this.instrumentName]["rate"] = parseFloat(
+                                    elem.value
+                                );
+                            }
 
-                                if (m === 1) {
-                                    instrumentsEffects[0][this.instrumentName]["octaves"] =
-                                        parseFloat(elem.value);
-                                }
+                            if (m === 1) {
+                                instrumentsEffects[0][this.instrumentName]["octaves"] = parseFloat(
+                                    elem.value
+                                );
+                            }
 
-                                if (m === 2) {
-                                    instrumentsEffects[0][this.instrumentName]["baseFrequency"] =
-                                        parseFloat(elem.value);
-                                }
+                            if (m === 2) {
+                                instrumentsEffects[0][this.instrumentName]["baseFrequency"] =
+                                    parseFloat(elem.value);
+                            }
 
-                                this._update(blockValue, parseFloat(elem.value), Number(m));
-                                this._playNote("G4", 1 / 8);
-                            });
+                            this._update(blockValue, parseFloat(elem.value), Number(m));
+                            this._playNote("G4", 1 / 8);
+                        });
                     }
                 } else if (effectChosen === "Distortion") {
                     this.isActive["tremolo"] = false;
