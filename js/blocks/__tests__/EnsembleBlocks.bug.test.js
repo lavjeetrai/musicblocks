@@ -83,7 +83,7 @@ describe("EnsembleBlocks._blockFindTurtle null pointer bug", () => {
                 return null;
             }
             const targetTurtleId = getTargetTurtle(activity.turtles, targetTurtle);
-            if (targetTurtleId === null) {
+            if (targetTurtleId === null || targetTurtleId === undefined) {
                 return null;
             }
             return activity.turtles.getTurtle(targetTurtleId);
