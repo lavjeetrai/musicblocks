@@ -709,6 +709,12 @@ describe("_() i18n translation", () => {
         expect(_("hello")).toBe("hello");
     });
 
+    it("returns original input when text cleaning throws an error", () => {
+        const malformedInput = { complex: "object" };
+        expect(_(malformedInput)).toBe(malformedInput);
+        expect(_(123)).toBe(123);
+    });
+
     it("resolves Japanese kanji translation when lang is ja", () => {
         i18next.language = "ja";
         getItemSpy.mockReturnValue("kanji");
