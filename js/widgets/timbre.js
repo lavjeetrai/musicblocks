@@ -1869,9 +1869,11 @@ class TimbreWidget {
         const env = docById("timbreTable");
         env.textContent = "";
 
+        const wrapperEnvs = [];
         for (let i = 0; i < 4; i++) {
             const wrapperEnv = document.createElement("div");
             wrapperEnv.id = "wrapperEnv" + i;
+            wrapperEnvs.push(wrapperEnv);
 
             const circleDiv = document.createElement("div");
             circleDiv.className = "circle";
@@ -1913,7 +1915,7 @@ class TimbreWidget {
         }
 
         for (let i = 0; i < 4; i++) {
-            document.getElementById("wrapperEnv" + i).addEventListener("change", event => {
+            wrapperEnvs[i].addEventListener("change", event => {
                 const elem = event.target;
                 const m = elem.id.slice(-1);
                 docById("myRange" + m).value = parseFloat(elem.value);
