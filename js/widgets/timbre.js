@@ -1667,30 +1667,32 @@ class TimbreWidget {
 
                     this._setDuoSynthParamVals(this.duoSynthParams[0], this.duoSynthParams[1]);
 
+                    const wrappers = [
+                        document.getElementById("wrapperS0"),
+                        document.getElementById("wrapperS1")
+                    ];
                     for (let i = 0; i < 2; i++) {
-                        document
-                            .getElementById("wrapperS" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = Number(elem.id.slice(-1));
-                                this.duoSynthParams[m] = elem.value;
-                                docById("myRangeS" + m).value = parseFloat(elem.value);
-                                if (m === 0) {
-                                    this._setDuoSynthParamVals(elem.value, this.duoSynthParams[1]);
-                                } else if (m === 1) {
-                                    this._setDuoSynthParamVals(this.duoSynthParams[0], elem.value);
-                                }
+                        wrappers[i].addEventListener("change", event => {
+                            const elem = event.target;
+                            const m = Number(elem.id.slice(-1));
+                            this.duoSynthParams[m] = elem.value;
+                            docById("myRangeS" + m).value = parseFloat(elem.value);
+                            if (m === 0) {
+                                this._setDuoSynthParamVals(elem.value, this.duoSynthParams[1]);
+                            } else if (m === 1) {
+                                this._setDuoSynthParamVals(this.duoSynthParams[0], elem.value);
+                            }
 
-                                docById("myspanS" + m).textContent = elem.value;
-                                this._update(blockValue, elem.value, m);
-                                this.activity.logo.synth.createSynth(
-                                    0,
-                                    this.instrumentName,
-                                    "duosynth",
-                                    this.duoSynthParamVals
-                                );
-                                this._playNote("G4", 1 / 8);
-                            });
+                            docById("myspanS" + m).textContent = elem.value;
+                            this._update(blockValue, elem.value, m);
+                            this.activity.logo.synth.createSynth(
+                                0,
+                                this.instrumentName,
+                                "duosynth",
+                                this.duoSynthParamVals
+                            );
+                            this._playNote("G4", 1 / 8);
+                        });
                     }
                 }
             };
