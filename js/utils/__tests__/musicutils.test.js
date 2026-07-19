@@ -32,6 +32,7 @@ const {
     nthDegreeToPitch,
     getInterval,
     _calculate_pitch_number,
+    _parse_pitch_string,
     _getStepSize,
     reducedFraction,
     toFraction,
@@ -3738,5 +3739,35 @@ describe("_getStepSize custom temperament with ratios", () => {
         });
         expect(_getStepSize("C major", "C", "up", 5, "testNoRatios")).toBe(5);
         expect(_getStepSize("C major", "C", "down", 3, "testNoRatios")).toBe(3);
+    });
+});
+
+describe("_parse_pitch_string", () => {
+    it("should parse standard notes without accidentals", () => {
+        expect(_parse_pitch_string("C4")).toEqual(["C", 4]);
+        expect(_parse_pitch_string("A10")).toEqual(["A", 10]);
+        expect(_parse_pitch_string("g-1")).toEqual(["G", -1]);
+    });
+    it("should parse single accidentals", () => {
+        expect(_parse_pitch_string("A#10")).toEqual(["A♯", 10]);
+        expect(_parse_pitch_string("Gb3")).toEqual(["G♭", 3]);
+        expect(_parse_pitch_string("F♯5")).toEqual(["F♯", 5]);
+        expect(_parse_pitch_string("E♭2")).toEqual(["E♭", 2]);
+    });
+    it("should parse double accidentals", () => {
+        expect(_parse_pitch_string("F𝄪5")).toEqual(["F𝄪", 5]);
+        expect(_parse_pitch_string("B𝄫3")).toEqual(["B𝄫", 3]);
+        expect(_parse_pitch_string("Cx4")).toEqual(["C𝄪", 4]);
+    });
+    it("should calculate mixed and multiple accidentals", () => {
+        expect(_parse_pitch_string("G#b#5")).toEqual(["G♯", 5]);
+        expect(_parse_pitch_string("C###4")).toEqual(["C♯♯♯", 4]);
+        expect(_parse_pitch_string("Dbbb4")).toEqual(["D♭♭♭", 4]);
+        expect(_parse_pitch_string("E#b4")).toEqual(["E", 4]);
+    });
+    it("should handle the fallback case without an octave digit", () => {
+        expect(_parse_pitch_string("Cb")).toEqual(["C♭", 4]);
+        expect(_parse_pitch_string("C#")).toEqual(["C♯", 4]);
+        expect(_parse_pitch_string("C")).toEqual(["C", 4]);
     });
 });

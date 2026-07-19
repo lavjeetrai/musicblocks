@@ -7725,6 +7725,7 @@ if (typeof module !== "undefined" && module.exports) {
         getInterval,
         _parse_pitch_string,
         _calculate_pitch_number,
+        _parse_pitch_string,
         _getStepSize,
         reducedFraction,
         toFraction,
