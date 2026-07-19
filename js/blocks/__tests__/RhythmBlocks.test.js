@@ -29,6 +29,7 @@ global.setupBlockDragController = require("../../block-drag-controller").setupBl
 const Blocks = jest.requireActual("../../blocks");
 
 global._ = s => s;
+global.setupBlockDragController = require("../../block-drag-controller").setupBlockDragController;
 global.NOINPUTERRORMSG = "NO_INPUT";
 global.DEFAULTDRUM = "kick";
 global.DEFAULTBLOCKSCALE = 1.0;
