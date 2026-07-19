@@ -21,6 +21,7 @@
  */
 
 const { setupRhythmBlocks } = jest.requireActual("../RhythmBlocks");
+global.setupBlockDragController = require("../../block-drag-controller").setupBlockDragController;
 const Blocks = jest.requireActual("../../blocks");
 
 global._ = s => s;
