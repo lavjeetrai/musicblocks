@@ -3296,11 +3296,9 @@ const piemenuIntervals = (block, selectedInterval) => {
                         that._intervalWheel.navItems[l * 8 + j].navItem.hide();
                     } else {
                         that._intervalWheel.navItems[l * 8 + j].navItem.show();
-                        if (!activeTabs.includes(j + 1)) {
-                            that._intervalWheel.navItems[l * 8 + j].enabled = false;
-                        } else {
-                            that._intervalWheel.navItems[l * 8 + j].enabled = true;
-                        }
+                        that._intervalWheel.navItems[l * 8 + j].enabled = activeTabs.includes(
+                            j + 1
+                        );
                     }
                 }
             }
