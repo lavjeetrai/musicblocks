@@ -135,6 +135,8 @@ global.FlowBlock = FlowBlock;
 global.FlowClampBlock = FlowClampBlock;
 global.ValueBlock = ValueBlock;
 
+global.setupBlockDragController = jest.fn();
+
 const createBlocksHarness = () => {
     const blocks = new Blocks({
         storage: {},
