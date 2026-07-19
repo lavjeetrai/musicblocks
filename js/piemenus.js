@@ -3288,17 +3288,19 @@ const piemenuIntervals = (block, selectedInterval) => {
 
     let isInitialized = false;
     // Add function to each main menu for show/hide sub menus
-    // TODO: Add all tabs to each interval
     const __setupAction = (i, activeTabs) => {
         that._intervalNameWheel.navItems[i].navigateFunction = () => {
             for (let l = 0; l < labels.length; l++) {
                 for (let j = 0; j < 8; j++) {
                     if (l !== i) {
                         that._intervalWheel.navItems[l * 8 + j].navItem.hide();
-                    } else if (!activeTabs.includes(j + 1)) {
-                        that._intervalWheel.navItems[l * 8 + j].navItem.hide();
                     } else {
                         that._intervalWheel.navItems[l * 8 + j].navItem.show();
+                        if (!activeTabs.includes(j + 1)) {
+                            that._intervalWheel.navItems[l * 8 + j].enabled = false;
+                        } else {
+                            that._intervalWheel.navItems[l * 8 + j].enabled = true;
+                        }
                     }
                 }
             }
