@@ -128,7 +128,19 @@ function AIDebuggerWidget() {
      * @private
      */
     this._generateConversationId = function () {
-        return "conv_" + Date.now() + "_" + Math.random().toString(36).substring(2, 11);
+        let randomPart = "";
+        if (typeof window !== "undefined" && window.crypto && window.crypto.getRandomValues) {
+            const array = new Uint32Array(1);
+            window.crypto.getRandomValues(array);
+            randomPart = array[0].toString(36).padStart(7, "0");
+        } else if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            randomPart = array[0].toString(36).padStart(7, "0");
+        } else {
+            randomPart = Math.random().toString(36).substring(2, 11);
+        }
+        return "conv_" + Date.now() + "_" + randomPart;
     };
 
     this.conversationId = this._generateConversationId();
