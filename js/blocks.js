@@ -18,7 +18,7 @@
     DEFAULTNOISE, DEFAULTOSCILLATORTYPE, DEFAULTTEMPERAMENT,
     DEFAULTVOICE, NATURAL, NUMBERBLOCKDEFAULT,
     STANDARDBLOCKHEIGHT, STRINGLEN, TEXTWIDTH,
-    WESTERN2EISOLFEGENAMES, WIDENAMES, addTemperamentToDictionary,
+    WESTERN2EISOLFEGENAMES, addTemperamentToDictionary,
    Block, closeBlkWidgets, ConnectionValidator, createjs, delayExecution, DEFAULTCHORD,
    deleteTemperamentFromList, getDrumSynthName, getNoiseName,
    getNoiseSynthName, getTemperamentsList, getTextWidth,
@@ -45,7 +45,7 @@
         setupBlockDragController
    - js/connection-validator.js
         ConnectionValidator
-   - js/piemenus.js
+   - js/piemenu-block-context.js
         piemenuBlockContext
    - js/protoblocks.js
         ProtoBlock
@@ -62,8 +62,6 @@
         updateTemperaments
 */
 // Constants moved to js/block-constants.js
-
-const PITCHBLOCKS = ["pitch", "steppitch", "hertz", "pitchnumber", "nthmodalpitch", "playdrum"];
 
 /**
  * Blocks holds the list of blocks and most of the block-associated
@@ -473,7 +471,12 @@ class Blocks {
             if (this.activeBlock !== null) {
                 /** Don't extract silence blocks. */
                 if (this.blockList[this.activeBlock].name !== "rest2") {
+                    const thisBlock = this.activeBlock;
+
+                    const parentExpandableBlk = this.insideExpandableBlock(thisBlock);
                     this._extractBlock(this.activeBlock, true);
+
+                    this.addDefaultBlock(parentExpandableBlk, thisBlock);
                 }
             }
         };
@@ -540,6 +543,9 @@ class Blocks {
                         this.adjustExpandableClampBlock();
                     }
                 }
+                if (adjustDock) {
+                    this.adjustDocks(blk, true);
+                }
             } else {
                 if (firstConnection !== null) {
                     connectionIdx = this.blockList[firstConnection].connections.indexOf(blk);
@@ -570,8 +576,9 @@ class Blocks {
         };
 
         /**
-         * Toggle state of collapsible blocks, except for note blocks,
-         * which are handled separately.
+         * Toggle state of collapsible blocks, except for inline-collapsible
+         * blocks (e.g. note, interval, osctime, definemode), which are
+         * handled separately.
          * @public
          * @returns {void}
          */
@@ -579,7 +586,7 @@ class Blocks {
             let allCollapsed = true;
             let someCollapsed = false;
             for (const myBlock of this.blockList) {
-                if (!myBlock || ["newnote", "interval", "osctime"].includes(myBlock.name)) {
+                if (!myBlock || myBlock.isInlineCollapsible()) {
                     continue;
                 }
 
@@ -598,7 +605,7 @@ class Blocks {
                  * If any blocks are collapsed, collapse them all.
                  */
                 for (const myBlock of this.blockList) {
-                    if (!myBlock || ["newnote", "interval", "osctime"].includes(myBlock.name)) {
+                    if (!myBlock || myBlock.isInlineCollapsible()) {
                         continue;
                     }
 
@@ -609,7 +616,7 @@ class Blocks {
             } else {
                 /** If no blocks are collapsed, collapse them all. */
                 for (const myBlock of this.blockList) {
-                    if (!myBlock || ["newnote", "interval", "osctime"].includes(myBlock.name)) {
+                    if (!myBlock || myBlock.isInlineCollapsible()) {
                         continue;
                     }
 
@@ -757,8 +764,8 @@ class Blocks {
         this._getBlockSize = blk => {
             const myBlock = this.blockList[blk];
             if (myBlock === undefined) return 0;
-            /** Special case for collapsed note blocks. */
-            if (["newnote", "interval", "osctime"].includes(myBlock.name) && myBlock.collapsed) {
+            /** Special case for collapsed inline-collapsible blocks. */
+            if (myBlock.isInlineCollapsible() && myBlock.collapsed) {
                 return 1;
             }
 
@@ -1022,13 +1029,10 @@ class Blocks {
                 size = myBlock.size;
             }
 
-            /** If the note value block is collapsed, spoof size. */
+            /** If the inline-collapsible block is collapsed, spoof size. */
             if (this.blocksToCollapse.indexOf(blk) !== -1) {
                 size = 1;
-            } else if (
-                ["newnote", "interval", "osctime"].includes(myBlock.name) &&
-                myBlock.collapsed
-            ) {
+            } else if (myBlock.isInlineCollapsible() && myBlock.collapsed) {
                 size = 1;
             }
 
@@ -1559,12 +1563,12 @@ class Blocks {
                 }
 
                 const nextBlock = last(this.blockList[thisBlock].connections);
-                if (PITCHBLOCKS.includes(this.blockList[thisBlock].name)) {
+                if (this.blockList[thisBlock]?.isSoundSpecifier?.()) {
                     this._extractBlock(thisBlock, false);
                 } else if (["flat", "sharp"].includes(this.blockList[thisBlock].name)) {
                     /** The pitch block might be inside a sharp or flat block. */
                     const b = this.blockList[thisBlock].connections[1];
-                    if (this._blockInStack(b, PITCHBLOCKS)) {
+                    if (this._blockInStack(b, blk => blk?.isSoundSpecifier?.())) {
                         this._extractBlock(thisBlock, false);
                     }
                 }
@@ -2073,7 +2077,7 @@ class Blocks {
                     break;
             }
 
-            if (!WIDENAMES.includes(myBlock.name) && label.length > maxLength) {
+            if (!myBlock.hasWideLabel() && label.length > maxLength) {
                 label = label.substr(0, maxLength - 1) + "...";
             }
 
@@ -2200,11 +2204,15 @@ class Blocks {
          * @private
          * @returns boolean
          */
-        this._blockInStack = (thisBlock, names) => {
-            /** Is there a block of any of these names in this stack? */
+        this._blockInStack = (thisBlock, namesOrPredicate) => {
+            /** Is there a block of any of these names/predicates in this stack? */
             let counter = 0;
             while (thisBlock !== null) {
-                if (names.includes(this.blockList[thisBlock].name)) {
+                const matched =
+                    typeof namesOrPredicate === "function"
+                        ? namesOrPredicate(this.blockList[thisBlock])
+                        : namesOrPredicate.includes(this.blockList[thisBlock].name);
+                if (matched) {
                     return true;
                 }
 
@@ -2995,7 +3003,7 @@ class Blocks {
                             that.blockList[b].value = v;
                             let l = _(value.toString());
                             if (
-                                !WIDENAMES.includes(that.blockList[b].name) &&
+                                !that.blockList[b].hasWideLabel() &&
                                 getTextWidth(l, "bold 20pt Sans") > TEXTWIDTH
                             ) {
                                 l = l.substr(0, STRINGLEN) + "...";
@@ -3022,7 +3030,7 @@ class Blocks {
                         that.blockList[b].value = v;
                         let l = _(v.toString());
                         if (
-                            !WIDENAMES.includes(that.blockList[b].name) &&
+                            !that.blockList[b].hasWideLabel() &&
                             getTextWidth(l, "bold 20pt Sans") > TEXTWIDTH
                         ) {
                             l = l.substr(0, STRINGLEN) + "...";
@@ -4087,7 +4095,7 @@ class Blocks {
                 return null;
             }
 
-            if (PITCHBLOCKS.includes(this.blockList[blk].name)) {
+            if (this.blockList[blk]?.isSoundSpecifier?.()) {
                 return blk;
             } else if (this.blockList[blk].name === "rest2") {
                 return blk;
@@ -4838,7 +4846,7 @@ class Blocks {
 
                 /** Don't make duplicate action names. */
                 /** Add a palette entry for any new storein blocks. */
-                const stringValues = {}; /** label: [blocks with that label] */
+                const stringValues = Object.create(null); /** label: [blocks with that label] */
                 const actionNames = {}; /** action block: label block */
                 const storeinNames = {}; /** storein block: label block */
                 const doNames = {}; /** do block: label block, nameddo block value */
@@ -6780,12 +6788,14 @@ class Blocks {
          * @param logo
          * @param turtle
          * @param blk
-         * @returns {void}
+         * @returns {boolean} Whether the displayed parameter value changed.
          */
         this.updateParameterBlock = (logo, turtle, blk) => {
             const name = this.blockList[blk].name;
 
             if (this.blockList[blk].protoblock.parameter && this.blockList[blk].text !== null) {
+                const text = this.blockList[blk].text;
+                const previousText = text.text;
                 let value = 0;
 
                 if (typeof this.blockList[blk].protoblock.updateParameter === "function") {
@@ -6800,32 +6810,39 @@ class Blocks {
                             name
                         );
                     } else {
-                        return;
+                        return false;
                     }
                 }
 
                 // Comprehensive safety check for all value types
                 if (value === null || value === undefined) {
-                    this.blockList[blk].text.text = "";
+                    text.text = "";
                 } else if (typeof value === "string") {
                     if (value.length > 6) {
                         value = value.substr(0, 5) + "...";
                     }
-                    this.blockList[blk].text.text = value;
+                    text.text = value;
                 } else if (name === "divide") {
-                    this.blockList[blk].text.text = mixedNumber(value);
+                    text.text = mixedNumber(value);
                 } else {
                     // Safe toString conversion
                     try {
-                        this.blockList[blk].text.text = value.toString();
+                        text.text = value.toString();
                     } catch (error) {
                         console.warn("Error converting value to string:", value, error);
-                        this.blockList[blk].text.text = "";
+                        text.text = "";
                     }
                 }
 
+                if (text.text === previousText) {
+                    return false;
+                }
+
                 this.blockList[blk].container.updateCache();
+                return true;
             }
+
+            return false;
         };
 
         /**

@@ -241,6 +241,21 @@ describe("Block Foundation", () => {
             expect(block.isNoteContainer()).toBe(false);
         });
 
+        it("isSoundSpecifier() should return true from capability metadata", () => {
+            mockProtoBlock.capabilities.soundSpecifier = true;
+
+            const block = new Block(mockProtoBlock, mockBlocks);
+            expect(block.isSoundSpecifier()).toBe(true);
+        });
+
+        it("isSoundSpecifier() should return false for ordinary blocks", () => {
+            mockProtoBlock.name = "forward";
+            mockProtoBlock.capabilities = Object.create(null);
+
+            const block = new Block(mockProtoBlock, mockBlocks);
+            expect(block.isSoundSpecifier()).toBe(false);
+        });
+
         it("hasValueDrivenLabel() should return true from capability metadata", () => {
             mockProtoBlock.capabilities.valueDrivenLabel = true;
 
@@ -262,6 +277,29 @@ describe("Block Foundation", () => {
 
             const block = new Block(mockProtoBlock, mockBlocks);
             expect(block.hasValueDrivenLabel()).toBe(false);
+        });
+
+        it("hasWideLabel() should return true from capability metadata", () => {
+            mockProtoBlock.capabilities.wideLabel = true;
+
+            const block = new Block(mockProtoBlock, mockBlocks);
+            expect(block.hasWideLabel()).toBe(true);
+        });
+
+        it("hasWideLabel() should respect explicit false metadata", () => {
+            mockProtoBlock.name = "drumname";
+            mockProtoBlock.capabilities.wideLabel = false;
+
+            const block = new Block(mockProtoBlock, mockBlocks);
+            expect(block.hasWideLabel()).toBe(false);
+        });
+
+        it("hasWideLabel() should return false for ordinary blocks", () => {
+            mockProtoBlock.name = "forward";
+            mockProtoBlock.capabilities = Object.create(null);
+
+            const block = new Block(mockProtoBlock, mockBlocks);
+            expect(block.hasWideLabel()).toBe(false);
         });
 
         describe("isArgumentLikeBlock()", () => {

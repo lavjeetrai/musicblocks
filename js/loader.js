@@ -61,12 +61,16 @@ requirejs.config({
         "utils/browser-utils": {
             exports: "BrowserUtils"
         },
+        "utils/http-utils": {
+            exports: "HttpUtils"
+        },
         "utils/utils": {
             deps: [
                 "utils/platformstyle",
                 "utils/utils-logic",
                 "utils/dom-helpers",
-                "utils/browser-utils"
+                "utils/browser-utils",
+                "utils/http-utils"
             ],
             exports: "_"
         },
@@ -395,6 +399,13 @@ requirejs(["i18next", "i18nextHttpBackend"], function (i18next, i18nextHttpBacke
                     window.localStorage.setItem("languagePreference", "ja");
                     window.localStorage.setItem("kanaPreference", "kanji");
                     return "ja";
+                }
+                // The language menu stores enUS/enUK, but the locale files are en/en_GB.
+                if (savedLanguage === "enUS") {
+                    return "en";
+                }
+                if (savedLanguage === "enUK") {
+                    return "en_GB";
                 }
                 return savedLanguage.startsWith("ja") ? "ja" : savedLanguage;
             }
