@@ -231,6 +231,8 @@ requirejs.config({
         "activity/search-controller": "js/activity/search-controller",
         "activity/workspace-layout-controller": "js/activity/workspace-layout-controller",
         "activity/selection-controller": "js/activity/selection-controller",
+        "activity/block-scale-controller": "js/activity/block-scale-controller",
+        "activity/block-drag-controller": "js/activity/block-drag-controller",
         "search-ui": "js/search-ui",
         "project-manager": "js/project-manager",
         "keyboard-controller": "js/keyboard-controller",

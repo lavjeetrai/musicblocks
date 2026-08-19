@@ -120,6 +120,28 @@ NOTE: Only run `prettier` on the files you have modified.
 
 If formatting fails, run `npx prettier --write .` to fix it.
 
+### Developer Certificate of Origin (DCO)
+
+Every commit must include a `Signed-off-by` trailer certifying you wrote the
+change or otherwise have the right to submit it under the project's license
+(see the [Developer Certificate of Origin](https://developercertificate.org/)
+for the full text). A CI check enforces this on every pull request.
+
+Add the trailer automatically with the `-s` flag:
+
+```bash
+git commit -s -m "docs: add AI contribution guidelines (Related to #XXXX)"
+```
+
+Forgot it on a commit that's already made? Fix it with:
+
+```bash
+git commit -s --amend                # amends only the last commit
+git rebase --signoff master          # adds it to every commit on the branch
+```
+
+Then force-push the branch: `git push --force-with-lease`.
+
 ### Creating Pull Requests
 
 Follow these steps when contributing:
@@ -143,7 +165,7 @@ Follow these steps when contributing:
 4.  Commit with clear, descriptive messages:
 
     ```
-    git commit -m "docs: add AI contribution guidelines (Related to #XXXX)"
+    git commit -s -m "docs: add AI contribution guidelines (Related to #XXXX)"
     ```
 
 5.  Push your branch:
@@ -153,7 +175,12 @@ Follow these steps when contributing:
     ```
 
 6.  **Open a Pull Request:**
-    - Use a clear and descriptive title.
+    - Use a Conventional Commit title: `<type>: <subject>` (for example,
+      `fix: correct drag offset on touch devices`). Allowed types are
+      `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `i18n`, `perf`, `refactor`,
+      `revert`, `style`, and `test`. The title is linted by
+      `pr-title-check.yml`. See [Releases and the Changelog](#releases-and-the-changelog)
+      for why this matters when a PR is squash-merged.
     - Link the related issue using `Related to #XXXX` or `Partially addresses #XXXX`.
     - Explain what changed and why.
     - Keep pull requests focused on a single topic or feature.
@@ -265,7 +292,7 @@ What this means for you as a contributor:
   line verbatim, so `fix(palette): correct drag offset on touch devices`
   reads well and `fix: stuff` does not.
 - `feat`, `fix`, `perf`, `docs`, and `revert` appear in the changelog.
-  `build`, `chore`, `ci`, `refactor`, `style`, and `test` are still valid
+  `build`, `chore`, `ci`, `i18n`, `refactor`, `style`, and `test` are still valid
   commit types and still required to pass linting — they are just hidden
   from the changelog. Two of those are deliberate policy rather than
   housekeeping: **added or changed tests** and **pure refactors** are not
