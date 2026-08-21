@@ -1663,11 +1663,18 @@ class Logo {
         } else if (startBlocks.length > 0) {
             let delayStart = 0;
             const startBlocksLength = startBlocks.length;
+<<<<<<< HEAD
+            // Look for status and oscilloscope blocks.
+            for (let b = 0; b < startBlocksLength; b++) {
+                if (
+                    ["status", "oscilloscope"].includes(this.blockList[startBlocks[b]].name) &&
+=======
             const STATUS_OSCILLOSCOPE_BLOCKS = new Set(["status", "oscilloscope"]);
             // Look for status and oscilloscope blocks.
             for (let b = 0; b < startBlocksLength; b++) {
                 if (
                     STATUS_OSCILLOSCOPE_BLOCKS.has(this.blockList[startBlocks[b]].name) &&
+>>>>>>> bbf5e69 (perf: optimize startBlocks execution speed in Logo)
                     !this.blockList[startBlocks[b]].trash
                 ) {
                     const turtle = 0;
@@ -1694,7 +1701,15 @@ class Logo {
 
                     // If there are multiple start blocks, run them all.
                     for (let b = 0; b < startBlocksLength; b++) {
+<<<<<<< HEAD
+                        if (
+                            !["status", "oscilloscope"].includes(
+                                this.blockList[startBlocks[b]].name
+                            )
+                        ) {
+=======
                         if (!STATUS_OSCILLOSCOPE_BLOCKS.has(this.blockList[startBlocks[b]].name)) {
+>>>>>>> bbf5e69 (perf: optimize startBlocks execution speed in Logo)
                             const turtle = this.blockList[startBlocks[b]].value;
                             const tur = this.turtles.ithTurtle(turtle);
 
