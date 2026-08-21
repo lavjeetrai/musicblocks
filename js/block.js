@@ -4486,8 +4486,9 @@ class Block {
             const drumValues = [];
             const categories = [];
             const categoriesList = [];
+            const effectsNamesSet = new Set(EFFECTSNAMES);
             for (let i = 0; i < DRUMNAMES.length; i++) {
-                if (!EFFECTSNAMES.includes(DRUMNAMES[i][1])) {
+                if (!effectsNamesSet.has(DRUMNAMES[i][1])) {
                     const label = _(DRUMNAMES[i][1]);
                     if (getTextWidth(label, "bold 30pt Sans") > 400) {
                         drumLabels.push(label.slice(0, 8) + "...");
@@ -4517,8 +4518,9 @@ class Block {
             const effectValues = [];
             const effectcategories = [];
             const effectcategoriesList = [];
+            const effectsNamesSet = new Set(EFFECTSNAMES);
             for (let i = 0; i < DRUMNAMES.length; i++) {
-                if (EFFECTSNAMES.includes(DRUMNAMES[i][1])) {
+                if (effectsNamesSet.has(DRUMNAMES[i][1])) {
                     const label = _(DRUMNAMES[i][1]);
                     if (getTextWidth(label, "Bold 30pt Sans") > 400) {
                         effectLabels.push(label.slice(0, 8) + "...");
