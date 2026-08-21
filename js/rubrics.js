@@ -529,6 +529,8 @@ const PALS = [
     "micep"
 ];
 
+const PALS_INDEX_MAP = new Map(PALS.map((pal, idx) => [pal, idx]));
+
 const PALLABELS = [
     _("rhythm"),
     _("pitch"),
@@ -651,7 +653,8 @@ const analyzeProject = activity => {
 
     for (let c = 0; c < cats.length; c++) {
         if (cats[c] in TASCORE) {
-            const idx = PALS.indexOf(TAPAL[cats[c]]);
+            const val = PALS_INDEX_MAP.get(TAPAL[cats[c]]);
+            const idx = val !== undefined ? val : -1;
             if (idx !== -1) {
                 scores[idx] += TASCORE[cats[c]];
             } else {
@@ -662,7 +665,8 @@ const analyzeProject = activity => {
 
     for (let p = 0; p < pals.length; p++) {
         if (pals[p] in TASCORE) {
-            const idx = PALS.indexOf(pals[p]);
+            const val = PALS_INDEX_MAP.get(pals[p]);
+            const idx = val !== undefined ? val : -1;
             if (idx !== -1) {
                 scores[idx] += TASCORE[pals[p]];
             } else {
