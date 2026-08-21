@@ -46,6 +46,26 @@ function SampleWidget() {
     const SAMPLEANALYSERSIZE = 8192;
     const SAMPLEOSCCOLORS = ["#3030FF", "#FF3050"];
 
+    const ALLOWED_BACKENDS = {
+        "localhost": "http://localhost:8000",
+        "127.0.0.1": "http://127.0.0.1:8000",
+        "musicblocks.sugarlabs.org": "https://api.musicblocks.sugarlabs.org"
+    };
+
+    const BACKEND_URL = (() => {
+        const host = window.location.hostname;
+        if (ALLOWED_BACKENDS[host]) {
+            return ALLOWED_BACKENDS[host];
+        }
+        if (host.endsWith(".musicblocks.sugarlabs.org")) {
+            return "https://api.musicblocks.sugarlabs.org";
+        }
+        console.warn(
+            "Sample Widget: unrecognized host '" + host + "'. Using local backend fallback."
+        );
+        return "http://localhost:8000";
+    })();
+
     /**
      * Reference to the timbre block.
      * @type {number | null}
@@ -789,7 +809,7 @@ function SampleWidget() {
                 setPromptBtnState(submit, true);
                 const prompt = textArea.value;
                 const encodedPrompt = encodeURIComponent(prompt);
-                const url = `http://13.61.94.100:8000/generate?prompt=${encodedPrompt}`;
+                const url = `${BACKEND_URL}/generate?prompt=${encodedPrompt}`;
 
                 let blinkInterval;
 
@@ -834,7 +854,7 @@ function SampleWidget() {
                     that.audioPreview = null;
                 }
 
-                const audioURL = `http://13.61.94.100:8000/preview`;
+                const audioURL = `${BACKEND_URL}/preview`;
                 const newAudio = new Audio(audioURL);
                 that.audioPreview = newAudio;
                 newAudio.play();
@@ -850,7 +870,7 @@ function SampleWidget() {
             stylePromptBtn(save, "Save");
             setPromptBtnState(save, true);
             save.onclick = function () {
-                const audioURL = `http://13.61.94.100:8000/save`;
+                const audioURL = `${BACKEND_URL}/save`;
                 const link = document.createElement("a");
                 link.href = audioURL;
                 link.download = "output.wav";
