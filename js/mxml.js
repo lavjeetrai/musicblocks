@@ -243,19 +243,15 @@ saveMxmlOutput = logo => {
     add("</score-partwise>");
 
     let mi = 1e5;
-    for (let i = 0; i < res.length - 1; i++) {
-        if ((res[i] === "P" || res[i] === "#") && "123456789".includes(res[i + 1])) {
-            mi = Math.min(mi, parseInt(res[i + 1], 10));
-        }
+    const regex = /[P#]([1-9])/g;
+    let match;
+    while ((match = regex.exec(res)) !== null) {
+        mi = Math.min(mi, parseInt(match[1], 10));
     }
 
-    res = res.split("");
-    for (let i = 0; i < res.length - 1; i++) {
-        if ((res[i] === "P" || res[i] === "#") && "123456789".includes(res[i + 1])) {
-            res[i + 1] = parseInt(res[i + 1], 10) - mi + 1;
-        }
-    }
-    res = res.join("");
+    res = res.replace(/([P#])([1-9])/g, (m, p1, p2) => {
+        return p1 + (parseInt(p2, 10) - mi + 1);
+    });
 
     return res;
 };
