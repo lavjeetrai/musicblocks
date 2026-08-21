@@ -6853,26 +6853,3 @@ let searchColors = (r, g, b) => {
 if (typeof module !== "undefined" && module.exports) {
     module.exports = { interpColor, getMunsellColor, getcolor, searchColors };
 }
-// /**
-//  * @deprecated
-//  * @param {number} r - intensity of red
-//  * @param {number} g - intensity of green
-//  * @param {number} b - intensity of blue
-//  */
-// function searchAllColors(r, g, b) {
-//     let nearestColor = -1;
-//     let distance = 10000000;
-//     for (let i = 0; i < MUNSELL.length; i++) {
-//         const color = MUNSELL[i];
-//         const r1 = parseInt(color.substr(1, 2), 16);
-//         const g1 = parseInt(color.substr(3, 2), 16);
-//         const b1 = parseInt(color.substr(5, 2), 16);
-//         const distSquared = (r1 - r) * (r1 - r) + (g1 - g) * (g1 - g) + (b1 - b) * (b1 - b);
-//         if (distSquared < distance) {
-//             distance = distSquared;
-//             nearestColor = i;
-//         }
-//     }
-
-//     return nearestColor;
-// }
