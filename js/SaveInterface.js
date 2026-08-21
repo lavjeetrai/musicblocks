@@ -770,12 +770,6 @@ class SaveInterface {
         docById("submitLilypond").onclick = () => {
             activity.save.saveLYFile(false);
         };
-        // if (this.planet){
-        //     docById('submitPDF').onclick = function(){this.saveLYFile(true);}.bind(this);
-        //     docById('submitPDF').disabled = false;
-        // } else {
-        //     docById('submitPDF').disabled = true;
-        // }
         docByClass("close")[0].onclick = () => {
             activity.logo.runningLilypond = false;
             docById("lilypondModal").style.display = "none";
