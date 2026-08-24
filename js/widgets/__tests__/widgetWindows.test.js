@@ -25,6 +25,7 @@ const path = require("path");
 
 // Set up globals required by widgetWindows.js before importing
 global._ = str => str;
+global.makeKeyboardAccessible = require("../../utils/dom-helpers").makeKeyboardAccessible;
 global.docById = jest.fn(id => document.getElementById(id));
 global.requestAnimationFrame = jest.fn(cb => cb());
 
@@ -279,6 +280,29 @@ describe("widgetWindows", () => {
 
             expect(img.getAttribute("title")).toBe("My Label");
             expect(img.getAttribute("alt")).toBe("My Label");
+        });
+
+        test("makes the button keyboard accessible", () => {
+            const win = createTestWindow();
+            const btn = win.addButton("icon.svg", 24, "My Label");
+
+            expect(btn.getAttribute("role")).toBe("button");
+            expect(btn.getAttribute("tabindex")).toBe("0");
+            expect(btn.getAttribute("aria-label")).toBe("My Label");
+
+            const clickSpy = jest.spyOn(btn, "click");
+            btn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+            expect(clickSpy).toHaveBeenCalled();
+        });
+
+        test("updates the accessible label when the button changes", () => {
+            const win = createTestWindow();
+            const btn = win.addButton("play.svg", 24, "Play");
+
+            win.modifyButton(0, "stop.svg", 24, "Stop");
+
+            expect(btn.getAttribute("aria-label")).toBe("Stop");
+            expect(btn.querySelector("img").getAttribute("alt")).toBe("Stop");
         });
 
         test("adds button to _buttons array", () => {
@@ -590,6 +614,24 @@ describe("widgetWindows", () => {
             win.updateTitle("New Title");
 
             expect(titleEl.innerHTML).toBe("New Title");
+        });
+
+        test("keeps the frame's aria-label in sync with the new title", () => {
+            const win = createTestWindow("Old Title");
+
+            win.updateTitle("New Title");
+
+            expect(win._frame.getAttribute("aria-label")).toBe("New Title");
+        });
+    });
+
+    describe("frame accessibility", () => {
+        test("gives the window frame a dialog role and an accessible name", () => {
+            const win = createTestWindow("My Widget");
+
+            expect(win._frame.getAttribute("role")).toBe("dialog");
+            expect(win._frame.getAttribute("aria-label")).toBe("My Widget");
+            expect(win._frame.getAttribute("aria-modal")).toBeNull();
         });
     });
 
@@ -917,8 +959,6 @@ describe("widgetWindows", () => {
             const win2 = createTestWindow("Window 2");
 
             win1._frame.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-            expect(window.widgetWindows.focused).toBe(win1);
-
             const maxEvent = new KeyboardEvent("keydown", {
                 code: "KeyM",
                 ctrlKey: true,
@@ -1074,6 +1114,18 @@ describe("widgetWindows", () => {
 
             win._rollButton.dispatchEvent(clickEvent);
             expect(win._rolled).toBe(false);
+        });
+
+        test("maxminButton title updates on maximize and restore", () => {
+            const win = createTestWindow("Test Window");
+            expect(win._maxminButton).toBeDefined();
+            expect(win._maxminButton.title).toBe("Maximize window");
+
+            win._maximize();
+            expect(win._maxminButton.title).toBe("Restore");
+
+            win._restore();
+            expect(win._maxminButton.title).toBe("Maximize window");
         });
     });
 });

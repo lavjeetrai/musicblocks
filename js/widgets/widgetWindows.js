@@ -9,7 +9,7 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, 51 Franklin Street, Suite 500 Boston, MA 02110-1335 USA
 
-/* global _, docById, ManagedTimer */
+/* global _, docById, ManagedTimer, makeKeyboardAccessible */
 
 /*
 Globals location
@@ -202,6 +202,8 @@ class WidgetWindow {
     _createUIelements() {
         const windows = docById("floatingWindows");
         this._frame = this._create("div", "windowFrame", windows);
+        this._frame.setAttribute("role", "dialog");
+        this._frame.setAttribute("aria-label", _(this._title));
         this._overlayframe = this._create("div", "windowFrame", windows);
         this._drag = this._create("div", "wfTopBar", this._frame);
         this._drag.style.display = "flex";
@@ -286,6 +288,8 @@ class WidgetWindow {
 
         if (this._fullscreenEnabled) {
             const maxminButton = this._create("div", "wftButton wftMaxmin", this._nonclosebuttons);
+            this._maxminButton = maxminButton;
+            maxminButton.title = _("Maximize window");
             maxminButton.setAttribute("role", "button");
             maxminButton.setAttribute("aria-label", _("Maximize window"));
             maxminButton.setAttribute("tabindex", "0");
@@ -491,6 +495,7 @@ class WidgetWindow {
         img.height = iconSize;
         img.width = iconSize;
         this._buttons[index].replaceChildren(img);
+        this._buttons[index].setAttribute("aria-label", label);
         return this._buttons[index];
     }
 
@@ -510,6 +515,7 @@ class WidgetWindow {
     updateTitle(title) {
         const wftTitle = docById(this._key + "WidgetID");
         wftTitle.textContent = title;
+        this._frame.setAttribute("aria-label", title);
     }
 
     /**
@@ -547,6 +553,7 @@ class WidgetWindow {
         img.height = iconSize;
         img.width = iconSize;
         el.replaceChildren(img);
+        makeKeyboardAccessible(el, label);
         this._buttons.push(el);
         return el;
     }
@@ -581,6 +588,9 @@ class WidgetWindow {
      */
     _restore() {
         this._maxminIcon.setAttribute("src", "header-icons/icon-expand.svg");
+        if (this._maxminButton) {
+            this._maxminButton.title = _("Maximize window");
+        }
         this._maximized = false;
 
         if (this._savedPos) {
@@ -601,6 +611,9 @@ class WidgetWindow {
      */
     _maximize() {
         this._maxminIcon.setAttribute("src", "header-icons/icon-contract.svg");
+        if (this._maxminButton) {
+            this._maxminButton.title = _("Restore");
+        }
         this._maximized = true;
         this.unroll();
         this.takeFocus();

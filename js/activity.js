@@ -62,7 +62,7 @@ try {
    MUSICALMODES, waitForReadiness, i18next, wheelnav, slicePath,
    base64Encode, disableHorizScrollIcon, toFraction, CARTESIANBUTTON,
    SELECTBUTTON, CLEARBUTTON, piemenuGrid, Midi, ABCJS, ensureABCJS,
-   extractProjectDataFromHTML,unescapeHTML, pubsub
+   extractProjectDataFromHTML,unescapeHTML, pubsub, normalizeLanguageCode
  */
 
 /*
@@ -434,10 +434,10 @@ class Activity {
                     this.storage.languagePreference = "ja";
                     this.storage.kanaPreference = "kanji";
                     lang = "ja";
-                } else if (lang.startsWith("ja")) {
-                    lang = "ja"; // normalize Japanese
                 }
-                i18next.changeLanguage(lang);
+                // The menu stores codes like enUS/enUK/zhCN; the locale files are
+                // named en/en_GB/zh_CN. Hand i18next the file name, not the menu id.
+                i18next.changeLanguage(normalizeLanguageCode(lang));
             } else {
                 lang = navigator.language;
                 if (lang.includes("-")) {
@@ -632,7 +632,7 @@ class Activity {
         };
 
         // Context menu / helpful wheel / bottom toolbar functionality has been
-        // extracted to ContextMenuController (js/context-menu-controller.js).
+        // extracted to ContextMenuController (js/activity/context-menu-controller.js).
         // setupContextMenuController() installs the delegation stubs below:
         // closeHelpfulWheel, setHelpfulSearchDiv, _displayHelpfulSearchDiv,
         // _hideHelpfulSearchWidget,
@@ -690,7 +690,7 @@ class Activity {
         //if any window resize event occurs:
         this.addEventListener(window, "resize", this._handleRepositionBlocksOnResize);
 
-        // Sets up HelpController (js/help-controller.js), which owns the help
+        // Sets up HelpController (js/activity/help-controller.js), which owns the help
         // window, about page, keyboard shortcuts dialog, statistics window,
         // JavaScript editor launch, and the Alt-H save-help-block workflow.
         // this.showHelp, this.showAboutPage, this.showKeyboardShortcuts,
@@ -2008,7 +2008,7 @@ class Activity {
 
             if (addStartBlock) {
                 this.blocks.loadNewBlocks(DATAOBJS);
-                this._allClear(false);
+                this._allClear(false, true);
             } else if (!doNotSave) {
                 // Overwrite session data too.
                 this.saveLocally();
@@ -2521,7 +2521,7 @@ class Activity {
             this.setupWindowBlurHandler(doHardStopButton);
 
             this.stage = new createjs.Stage(this.canvas);
-            createjs.Touch.enable(this.stage);
+            createjs.Touch.enable(this.stage, false, true);
             this._startRenderLoop();
 
             // Initialize Ticker with optimal framerate

@@ -21,7 +21,7 @@
    deepClone, fileBasename, fileExt, hex2rgb, hexToRGB, isSafeUrl, isUnsafeObjectKey, last,
    mixedNumber, nearestBeat, oneHundredToFraction, rationalSum, rgbToHex,
    safeSVG, safeJSONParse, toFixed2, toTitleCase, unescapeHTML, escapeHTML,
-   rationalToFraction, GCD, LCD, resolveObject, clampNumber, isValidHex
+   rationalToFraction, GCD, LCD, resolveObject, clampNumber, isValidHex, safeNumber, toArray
 */
 
 /**
@@ -78,7 +78,7 @@ var fileExt = file => {
         return "";
     }
 
-    return parts.pop();
+    return parts.pop().toLowerCase();
 };
 
 /**
@@ -558,6 +558,36 @@ var clampNumber = (val, min, max, fallback = min) => {
 };
 
 /**
+ * Safely parses a value into a finite number with a fallback value.
+ * @param {*} val - Value to parse into a number
+ * @param {number} [fallback=0] - Fallback numeric value if val is not finite or is NaN
+ * @returns {number} The parsed finite number or fallback value
+ */
+var safeNumber = (val, fallback = 0) => {
+    if (typeof val === "number" && Number.isFinite(val)) {
+        return val;
+    }
+    if (typeof val === "string" && val.trim() !== "") {
+        const parsed = Number(val);
+        if (Number.isFinite(parsed)) {
+            return parsed;
+        }
+    }
+    return typeof fallback === "number" && Number.isFinite(fallback) ? fallback : 0;
+};
+
+/**
+ * Safely converts a single value, array, or nullish input into an array.
+ * @param {*} val - Value to convert
+ * @returns {Array} An array containing the value, the original array if already an array, or an empty array for null/undefined
+ */
+var toArray = val => {
+    if (val === null || val === undefined) return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+};
+
+/**
  * Converts RGB values to a hexadecimal color code.
  */
 var rgbToHex = (r, g, b) => {
@@ -677,7 +707,9 @@ var UtilsLogic = {
     hex2rgb,
     resolveObject,
     clampNumber,
-    isValidHex
+    isValidHex,
+    safeNumber,
+    toArray
 };
 
 if (typeof module !== "undefined" && module.exports) {
