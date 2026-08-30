@@ -212,9 +212,6 @@ requirejs.config({
         "jquery-ui": {
             deps: ["jquery"]
         },
-        "abc": {
-            exports: "ABCJS"
-        },
         "libgif": {
             exports: "SuperGif"
         },
@@ -263,6 +260,7 @@ requirejs.config({
         "prefixfree.min": "lib/prefixfree.min",
         "howler": "lib/howler",
         "Chart": "lib/Chart",
+        "abcjs": "lib/abc.min",
         "samples": "sounds/samples",
         "planet": "js/planet",
         "tonejsMidi": "node_modules/@tonejs/midi/dist/Midi",
@@ -275,7 +273,6 @@ requirejs.config({
         "jquery": "lib/jquery-3.7.1.min",
         "jquery-ui": "lib/jquery-ui",
         "materialize": "lib/materialize.min",
-        "abc": "lib/abc.min",
         "libgif": "https://cdn.jsdelivr.net/gh/buzzfeed/libgif-js/libgif",
         "Tone": "lib/Tone",
         "highlight": "//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min",
@@ -513,7 +510,6 @@ requirejs(["i18next", "i18nextHttpBackend"], function (i18next, i18nextHttpBacke
                 { name: "jquery", export: () => window.jQuery },
                 { name: "jquery-ui", export: () => window.jQuery.ui },
                 { name: "materialize", export: () => window.Materialize || window.M },
-                { name: "abc", export: () => window.ABCJS },
                 { name: "Tone", export: () => window.Tone },
                 { name: "howler", export: () => window.Howl }
             ];

@@ -22,8 +22,81 @@ window.widgetWindows = {
     _posCache: {},
     focused: null,
     draggingWindow: null,
-    _shortcutsInitialized: false,
     _globalListenersInitialized: false,
+
+    // NOTE: This mapping only works for widgets that never set their own
+    // `blockNo` property (e.g. ModeWidget). window.widgetWindows.windowFor()
+    // keys a widget's window by `widget.blockNo` if that property is set to
+    // anything other than undefined (including null) — otherwise it falls
+    // back to the `saveAs` or `title` argument. Widgets like PhraseMaker set
+    // `this.blockNo` in their constructor, so they are keyed by blockNo, not
+    // by name, and will NOT be found via this KEY_MAPPING lookup. Adding such
+    // widgets here would silently do nothing. Before adding a new entry,
+    // verify the target widget's windowFor() call and confirm it does not
+    // rely on blockNo for its window key.
+    KEY_MAPPING: {
+        "pitch-drum mapper": "pitch drum",
+        "custom mode": "custom mode",
+        "tempo": "tempo",
+        "arpeggio": "arpeggio",
+        "timbre": "timbre",
+        "sampler": "sampler",
+        "rhythm maker": "rhythm maker",
+        "oscilloscope": "oscilloscope",
+        "temperament": "temperament",
+        "meter": "meter",
+        "LEGO Bricks": "LEGO BRICKS"
+    },
+
+    /**
+     * Closes a specific widget by its name.
+     *
+     * @param {string} name - The name of the widget to be closed.
+     * @returns {void}
+     */
+    closeBlkWidgets(name) {
+        let searchKey = name;
+
+        for (const origKey in window.widgetWindows.KEY_MAPPING) {
+            const translated = typeof _ === "function" ? _(origKey) : origKey;
+            if (name === translated) {
+                searchKey = window.widgetWindows.KEY_MAPPING[origKey];
+                break;
+            }
+        }
+
+        if (
+            window.widgetWindows &&
+            window.widgetWindows.openWindows &&
+            window.widgetWindows.openWindows[searchKey]
+        ) {
+            window.widgetWindows.closeWindow(searchKey);
+            return;
+        }
+
+        const widgetTitle = document.getElementsByClassName("wftTitle");
+        for (let i = 0; i < widgetTitle.length; i++) {
+            const titleEl = widgetTitle[i];
+            if (
+                titleEl.innerHTML === name ||
+                titleEl.innerHTML === searchKey ||
+                titleEl.id === `${searchKey}WidgetID`
+            ) {
+                const winKey =
+                    titleEl.id && typeof titleEl.id === "string"
+                        ? titleEl.id.replace("WidgetID", "")
+                        : searchKey;
+                if (
+                    window.widgetWindows &&
+                    typeof window.widgetWindows.closeWindow === "function"
+                ) {
+                    window.widgetWindows.closeWindow(winKey);
+                }
+                break;
+            }
+        }
+    },
+
     _handleGlobalKeyDown(e) {
         const focused = window.widgetWindows.focused;
         if (!focused || e.repeat) return; // Guard against no focus or rapid-fire repeat
@@ -69,10 +142,14 @@ window.widgetWindows = {
         this._handleGlobalMouseMove = this._handleGlobalMouseMove.bind(this);
         this._handleGlobalMouseUp = this._handleGlobalMouseUp.bind(this);
         this._handleGlobalMouseDown = this._handleGlobalMouseDown.bind(this);
+        this._handleGlobalKeyDown = this._handleGlobalKeyDown.bind(this);
 
         document.addEventListener("mouseup", this._handleGlobalMouseUp, true);
         document.addEventListener("mousemove", this._handleGlobalMouseMove, true);
         document.addEventListener("mousedown", this._handleGlobalMouseDown, true);
+        // Use capture phase (true) to handle keyboard shortcuts before individual
+        // widgets can intercept them via stopPropagation().
+        document.addEventListener("keydown", this._handleGlobalKeyDown, true);
 
         this._globalListenersInitialized = true;
     },
@@ -154,14 +231,6 @@ class WidgetWindow {
 
         window.widgetWindows._initGlobalListeners();
 
-        if (!window.widgetWindows._shortcutsInitialized) {
-            // Use capture phase (true) to ensure global window control shortcuts are handled
-            // before individual widgets/blocks can intercept them via stopPropagation().
-            window.removeEventListener("keydown", window.widgetWindows._handleGlobalKeyDown, true);
-            window.addEventListener("keydown", window.widgetWindows._handleGlobalKeyDown, true);
-            window.widgetWindows._shortcutsInitialized = true;
-        }
-
         if (window.widgetWindows._posCache[this._key]) {
             const _pos = window.widgetWindows._posCache[this._key];
             this.setPosition(_pos[0], _pos[1]);
@@ -211,7 +280,12 @@ class WidgetWindow {
 
         if (this._fullscreenEnabled) {
             this._drag.ondblclick = e => {
-                this._maximize();
+                if (this._maximized) {
+                    this._restore();
+                    this.sendToCenter();
+                } else {
+                    this._maximize();
+                }
                 this.takeFocus();
                 this.onmaximize();
                 e.preventDefault();
@@ -241,20 +315,6 @@ class WidgetWindow {
 
         this._nonclose.onmousedown = e => {
             window.widgetWindows.draggingWindow = this;
-            if (this._maximized) {
-                // Perform special repositioning to make the drag feel right when
-                // restoring a window from maximized.
-                let bcr = this._drag.getBoundingClientRect();
-                let dx = (bcr.left - e.clientX) / (bcr.right - bcr.left);
-                const dy = bcr.top - e.clientY;
-
-                this._restore();
-                this.onmaximize();
-
-                bcr = this._drag.getBoundingClientRect();
-                dx *= bcr.right - bcr.left;
-                this.setPosition(e.clientX + dx, e.clientY + dy);
-            }
 
             this.takeFocus();
 
@@ -345,6 +405,17 @@ class WidgetWindow {
      * @returns {void}
      */
     _docMouseMoveHandler(e) {
+        if (this._maximized) {
+            const bcr = this._drag.getBoundingClientRect();
+            const dxRatio = (bcr.left - e.clientX) / (bcr.right - bcr.left);
+            const dy = bcr.top - e.clientY;
+
+            this._restore();
+            this.onmaximize();
+
+            const newBcr = this._drag.getBoundingClientRect();
+            this.setPosition(e.clientX + dxRatio * (newBcr.right - newBcr.left), e.clientY + dy);
+        }
         // Throttle using requestAnimationFrame to prevent layout thrashing
         if (this._rafTicking) return;
         this._rafTicking = true;
@@ -731,6 +802,11 @@ class WidgetWindow {
     clear() {
         this._widget.replaceChildren();
         this._toolbar.replaceChildren();
+        // The toolbar buttons have just been removed from the DOM, so drop the
+        // references too. Widgets re-add their buttons after clear(), and
+        // modifyButton() addresses them by index — leaving the old entries in
+        // place would push every index past the detached ones.
+        this._buttons = [];
         return this;
     }
 

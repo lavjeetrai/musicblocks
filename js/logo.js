@@ -596,6 +596,10 @@ class Logo {
      * @returns {void}
      */
     initMediaDevices() {
+        if (this.mic && typeof this.mic.close === "function") {
+            this.mic.close();
+        }
+
         let mic = new this.deps.Tone.UserMedia();
         try {
             mic.open();
@@ -728,6 +732,22 @@ class Logo {
 
         tur.listeners[listenerName] = listener;
         this.stage.addEventListener(listenerName, listener, false);
+    }
+
+    /**
+     * Removes active event listeners from all turtles and clears listener objects.
+     *
+     * @returns {void}
+     */
+    clearTurtleListeners() {
+        for (const turtle of this.turtles.turtleList) {
+            if (turtle && turtle.listeners) {
+                for (const listener in turtle.listeners) {
+                    this.stage.removeEventListener(listener, turtle.listeners[listener], false);
+                }
+                turtle.listeners = {};
+            }
+        }
     }
 
     /**
@@ -1052,7 +1072,7 @@ class Logo {
         const tur = this.turtles.ithTurtle(turtle);
 
         if (tur.delayTimeout !== null) {
-            clearTimeout(tur.delayTimeout);
+            this._timerManager.clearTimeout(tur.delayTimeout);
             tur.delayTimeout = null;
             this.runFromBlockNow(
                 this,
@@ -1240,6 +1260,8 @@ class Logo {
         this.synth.disposeAllInstruments();
         this._synthsInitialized = false;
 
+        this.clearTurtleListeners();
+
         // eslint-disable-next-line eqeqeq
         if (this.cameraID != null) {
             this.deps.utils.doStopVideoCam(this.cameraID, this.setCameraID);
@@ -1264,6 +1286,9 @@ class Logo {
             );
         }
 
+        // Remove active stage listeners and clear listener objects across all turtles.
+        this.clearTurtleListeners();
+
         // Prevent stale timeout from firing cleanup on next run.
         this._lastNoteTimeout = null;
 
@@ -1271,12 +1296,6 @@ class Logo {
 
         for (const arg in this.evalOnStopList) {
             this.safePluginExecute(this.evalOnStopList[arg], this);
-        }
-
-        // Clear canvas on explicit Stop only — natural completion
-        // preserves drawings for SVG/PNG export.
-        for (const turtle of this.turtles.turtleList) {
-            turtle.painter.doClear(true, true, true);
         }
 
         // Recorder stop is Stop-only — natural completion must not
@@ -1510,13 +1529,7 @@ class Logo {
         this._meterBlock = null;
 
         // Remove any listeners that might be still active.
-        for (const turtle of this.turtles.turtleList) {
-            for (const listener in turtle.listeners) {
-                this.stage.removeEventListener(listener, turtle.listeners[listener], false);
-            }
-
-            turtle.listeners = {};
-        }
+        this.clearTurtleListeners();
 
         // Init the graphic state.
         for (const turtle in this.turtles.turtleList) {

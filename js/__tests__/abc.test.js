@@ -71,6 +71,15 @@ describe("processABCNotes - Basic Note Processing", () => {
         expect(logo.notationNotes["0"]).toBe("G^4 G^4 F4 F4 G^2 G^8 ");
     });
 
+    it("should handle octaves 5 and above correctly (lowercase and proper octave markers)", () => {
+        logo.notation.notationStaging["0"] = [
+            [["G5"], 4, 0, null, null, -1, false],
+            [["C8"], 4, 0, null, null, -1, false]
+        ];
+        processABCNotes(logo, "0");
+        expect(logo.notationNotes["0"]).toBe("g4 g4 c'''4 c'''4 ");
+    });
+
     it("should insert a newline after every 8 notes", () => {
         const notes = [];
         // Add 9 notes
@@ -368,6 +377,49 @@ describe("processABCNotes - Tuplet Handling", () => {
 
         processABCNotes(logo, "0");
         expect(logo.notationNotes["0"]).toBe("(1:1G^ 2G^ 2G^ 2 ");
+    });
+});
+
+describe("processABCNotes - Octave Conversion", () => {
+    let logo;
+    beforeEach(() => {
+        logo = { notationNotes: { 0: "" }, notation: { notationStaging: { 0: [] } } };
+    });
+
+    it("should keep octave 4 notes uppercase", () => {
+        logo.notation.notationStaging["0"] = [
+            [["C4"], 4, 0, null, null, -1, false],
+            [["B4"], 4, 0, null, null, -1, false]
+        ];
+        processABCNotes(logo, "0");
+        expect(logo.notationNotes["0"]).toBe("C4 C4 B4 B4 ");
+    });
+
+    it("should write octave 5 notes in lowercase without octave marks", () => {
+        logo.notation.notationStaging["0"] = [
+            [["C5"], 4, 0, null, null, -1, false],
+            [["B5"], 4, 0, null, null, -1, false]
+        ];
+        processABCNotes(logo, "0");
+        expect(logo.notationNotes["0"]).toBe("c4 c4 b4 b4 ");
+    });
+
+    it("should mark octaves above 5 with apostrophes and lowercase letters", () => {
+        logo.notation.notationStaging["0"] = [
+            [["C6"], 4, 0, null, null, -1, false],
+            [["C7"], 4, 0, null, null, -1, false]
+        ];
+        processABCNotes(logo, "0");
+        expect(logo.notationNotes["0"]).toBe("c'4 c'4 c''4 c''4 ");
+    });
+
+    it("should mark octaves below 4 with commas and uppercase letters", () => {
+        logo.notation.notationStaging["0"] = [
+            [["C3"], 4, 0, null, null, -1, false],
+            [["C2"], 4, 0, null, null, -1, false]
+        ];
+        processABCNotes(logo, "0");
+        expect(logo.notationNotes["0"]).toBe("C,4 C,4 C,,4 C,,4 ");
     });
 });
 

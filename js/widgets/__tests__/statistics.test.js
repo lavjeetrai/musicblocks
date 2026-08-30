@@ -49,6 +49,7 @@ describe("StatsWindow", () => {
             show: jest.fn(),
             destroy: jest.fn(),
             sendToCenter: jest.fn(),
+            addButton: jest.fn().mockReturnValue({ onclick: null }),
             onclose: null,
             onmaximize: null,
             getWidgetBody: jest.fn().mockReturnValue(body),
@@ -272,5 +273,61 @@ describe("StatsWindow", () => {
         expect(html).toContain("lowest note: N/A");
         expect(html).toContain("highest note: N/A");
         expect(html).toContain("number of notes: 0");
+    });
+
+    test("displayInfo formats totalSeconds using formatSeconds when provided", () => {
+        const sw = new StatsWindow(activity);
+        global.formatSeconds = jest.fn().mockReturnValue("02:05");
+
+        sw.displayInfo({
+            duples: 1,
+            triplets: 0,
+            quintuplets: 0,
+            pitchNames: new Set(["A4"]),
+            numberOfNotes: 1,
+            rests: 0,
+            ornaments: 0,
+            totalSeconds: 125
+        });
+
+        const html = sw.jsonObject.innerHTML;
+        expect(html).toContain("total duration: 02:05");
+        expect(global.formatSeconds).toHaveBeenCalledWith(125);
+    });
+
+    test("adds reload.svg Refresh button to toolbar and re-runs analytics on click", () => {
+        const sw = new StatsWindow(activity);
+        expect(widgetWin.addButton).toHaveBeenCalledWith("reload.svg", 32, "Refresh");
+
+        const btnObj = widgetWin.addButton.mock.results[0].value;
+        expect(typeof btnObj.onclick).toBe("function");
+
+        global.analyzeProject.mockClear();
+        btnObj.onclick();
+
+        expect(global.analyzeProject).toHaveBeenCalledTimes(1);
+    });
+
+    test("refresh method clears body and re-executes doAnalytics", () => {
+        const sw = new StatsWindow(activity);
+        const stale = document.createElement("div");
+        stale.textContent = "stale-data";
+        body.appendChild(stale);
+
+        global.analyzeProject.mockClear();
+        sw.refresh();
+
+        expect(body.textContent).not.toContain("stale-data");
+        expect(global.analyzeProject).toHaveBeenCalledTimes(1);
+    });
+
+    test("guards against in-flight rapid double-clicks while refresh is running", () => {
+        const sw = new StatsWindow(activity);
+        global.analyzeProject.mockClear();
+
+        sw._inFlight = true;
+        sw.refresh();
+
+        expect(global.analyzeProject).not.toHaveBeenCalled();
     });
 });

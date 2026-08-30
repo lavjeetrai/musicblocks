@@ -19,7 +19,7 @@
     DEFAULTVOICE, NATURAL, NUMBERBLOCKDEFAULT,
     STANDARDBLOCKHEIGHT, STRINGLEN, TEXTWIDTH,
     WESTERN2EISOLFEGENAMES, addTemperamentToDictionary,
-   Block, closeBlkWidgets, ConnectionValidator, createjs, delayExecution, DEFAULTCHORD,
+   Block, ConnectionValidator, createjs, delayExecution, DEFAULTCHORD,
    deleteTemperamentFromList, getDrumSynthName, getNoiseName,
    getNoiseSynthName, getTemperamentsList, getTextWidth,
    getVoiceSynthName, i18nSolfege, last, MathUtility, mixedNumber,
@@ -52,7 +52,7 @@
    - js/utils/mathutils.js
         MathUtility
    - js/utils/utils.js
-        _, last, closeBlkWidgets, mixedNumber, prepareMacroExports,
+        _, last, mixedNumber, prepareMacroExports,
         getTextWidth, delayExecution, deepClone
    - js/utils/musicutils.js
         addTemperamentToDictionary,
@@ -4715,10 +4715,14 @@ class Blocks {
             for (let b = 0; b < this.dragGroup.length; b++) {
                 const myBlock = this.blockList[this.dragGroup[b]];
                 for (let c = 0; c < myBlock.connections.length; c++) {
-                    if (myBlock.connections[c] === null) {
+                    const connection = myBlock.connections[c];
+                    if (
+                        connection === null ||
+                        !Object.prototype.hasOwnProperty.call(blockMap, connection)
+                    ) {
                         blockObjs[b][4].push(null);
                     } else {
-                        blockObjs[b][4].push(blockMap[myBlock.connections[c]]);
+                        blockObjs[b][4].push(blockMap[connection]);
                     }
                 }
             }
@@ -5359,7 +5363,12 @@ class Blocks {
                     }
                     bIndex = chunkEnd;
                     if (bIndex < totalBlocks) {
-                        window.requestAnimationFrame(processChunk);
+                        // requestAnimationFrame does not reliably fire in a hidden or
+                        // backgrounded window (e.g. headless/CI browser runs), which
+                        // silently stalls loading after the first chunk. setTimeout(0)
+                        // still yields to the main thread but keeps running regardless
+                        // of tab visibility.
+                        setTimeout(processChunk, 0);
                     }
                 };
 
@@ -6744,7 +6753,9 @@ class Blocks {
                 const title = this.blockList[blk].protoblock.staticLabels
                     ? this.blockList[blk].protoblock.staticLabels[0]
                     : this.blockList[blk].name;
-                if (title) closeBlkWidgets(_(title));
+                if (title && window.widgetWindows && window.widgetWindows.closeBlkWidgets) {
+                    window.widgetWindows.closeBlkWidgets(_(title));
+                }
                 this.activity.refreshCanvas();
             }
 

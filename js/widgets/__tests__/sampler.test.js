@@ -77,7 +77,34 @@ global.TunerDisplay = class {
     }
 };
 
-const { SampleWidget, PitchSmoother } = require("../sampler.js");
+const { SampleWidget, PitchSmoother, resolveBackendURL } = require("../sampler.js");
+
+describe("resolveBackendURL", () => {
+    test("returns window.AI_SAMPLE_ENDPOINT when defined and strips trailing slashes", () => {
+        window.AI_SAMPLE_ENDPOINT = "https://custom.endpoint.org///";
+        expect(resolveBackendURL()).toBe("https://custom.endpoint.org");
+        delete window.AI_SAMPLE_ENDPOINT;
+    });
+
+    test("respects backend query param override and strips trailing slashes", () => {
+        expect(resolveBackendURL({ search: "?backend=http://custom-api:9000/" })).toBe(
+            "http://custom-api:9000"
+        );
+
+        expect(
+            resolveBackendURL({
+                search: "?backend_url=https://staging.musicblocks.sugarlabs.org///"
+            })
+        ).toBe("https://staging.musicblocks.sugarlabs.org");
+    });
+
+    test("returns empty string when no endpoint is configured", () => {
+        delete window.AI_SAMPLE_ENDPOINT;
+        expect(resolveBackendURL(null)).toBe("");
+        expect(resolveBackendURL({})).toBe("");
+        expect(resolveBackendURL({ search: "" })).toBe("");
+    });
+});
 
 describe("SampleWidget.dependencies", () => {
     test("includes the tuner module used by the sampler", () => {
@@ -110,6 +137,7 @@ describe("Sampler Widget", () => {
         global.DOUBLESHARP = "x";
         global.DOUBLEFLAT = "bb";
         global.NATURAL = "n";
+        window.AI_SAMPLE_ENDPOINT = "https://samples.example";
 
         document.body.innerHTML = `
             <div id="wheelDiv"></div>
@@ -810,6 +838,10 @@ describe("Sampler Widget", () => {
             await submit.onclick();
             jest.runOnlyPendingTimers();
 
+            expect(global.fetch).toHaveBeenCalledWith(
+                "https://samples.example/generate?prompt=hello"
+            );
+
             preview.disabled = false;
             save.disabled = false;
             const playSpy = jest.fn();
@@ -828,6 +860,19 @@ describe("Sampler Widget", () => {
             expect(clickSpy).toHaveBeenCalled();
             clickSpy.mockRestore();
             jest.useRealTimers();
+        });
+
+        test("prompt reports unavailable AI sample generation without a configured endpoint", () => {
+            delete window.AI_SAMPLE_ENDPOINT;
+            mockActivity.errorMsg = jest.fn();
+            widget.init(mockActivity, 1);
+
+            widget._promptBtn.onclick();
+
+            expect(mockActivity.errorMsg).toHaveBeenCalledWith(
+                "AI sample generation is not available."
+            );
+            expect(docById("samplerPrompt")).toBeNull();
         });
 
         test("prompt submit handles failure and errors", async () => {
@@ -1024,6 +1069,7 @@ describe("Sampler Widget", () => {
 
         test("startPitchDetection handles getUserMedia failure", async () => {
             widget.widgetWindow = widgetWindow;
+            mockActivity.errorMsg = jest.fn();
             const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
             global.AudioContext = jest.fn(() => ({
                 sampleRate: 44100,
@@ -1042,15 +1088,22 @@ describe("Sampler Widget", () => {
                 },
                 configurable: true
             });
-            global.alert = jest.fn();
-
             widget.makeTuner(400, 300);
             const startButton = document.getElementById("start");
             startButton.click();
 
             await Promise.resolve();
-            expect(global.alert).toHaveBeenCalled();
+            expect(mockActivity.errorMsg).toHaveBeenCalledWith("Microphone access failed: no mic");
             errorSpy.mockRestore();
+        });
+    });
+
+    describe("endpoint safety", () => {
+        test("sampler.js contains no hardcoded HTTP IP addresses", () => {
+            const fs = require("fs");
+            const path = require("path");
+            const source = fs.readFileSync(path.resolve(__dirname, "../sampler.js"), "utf8");
+            expect(source).not.toMatch(/http:\/\/\d+\.\d+\.\d+\.\d+/);
         });
     });
 });

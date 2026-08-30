@@ -17,6 +17,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
 const { TextEncoder } = require("util");
 global.TextEncoder = TextEncoder;
 global._ = jest.fn(str => str);
@@ -124,13 +127,41 @@ const {
     scalePatternToEDO,
     PITCH_COLLECTIONS_EDO_OVERRIDES,
     getModePattern,
-    generateNoteNames
+    generateNoteNames,
+    isNonEDO,
+    getNonEDOModeSteps,
+    getSavedCustomModes,
+    getModeNamesForGroup,
+    getModeLabel,
+    getModeNameFromLabel,
+    getModeSliceColors,
+    updateModeWheelItems,
+    getModeGroupTitleFont
 } = require("../musicutils");
 
 const DOUBLESHARP = "\ud834\udd2a";
 const DOUBLEFLAT = "\ud834\udd2b";
 
 describe("musicutils", () => {
+    describe("getNonEDOFrequency browser runtime", () => {
+        it("returns a ratio-temperament preview frequency without Node global", () => {
+            const source = fs.readFileSync(path.join(__dirname, "..", "musicutils.js"), "utf8");
+            const sandbox = {
+                TextEncoder,
+                _: value => value,
+                localStorage: { getItem: () => null },
+                window: { btoa: value => Buffer.from(value, "binary").toString("base64") }
+            };
+
+            vm.createContext(sandbox);
+            vm.runInContext(source, sandbox);
+
+            expect(
+                vm.runInContext("getNonEDOFrequency(0, 4, 'just intonation', 'C major')", sandbox)
+            ).toEqual({ freq: 264, noteName: "C", octave: 4 });
+        });
+    });
+
     describe("musicutils core constants", () => {
         const last = arr => arr[arr.length - 1];
 
@@ -1091,6 +1122,15 @@ describe("keySignatureToMode", () => {
         expect(keySignatureToMode("A minor")).toEqual(["A", "minor"]);
         expect(keySignatureToMode("E minor")).toEqual(["E", "minor"]);
     });
+    it("should match custom mode names case-insensitively", () => {
+        // A mixed-case custom mode registered in MUSICALMODES must resolve
+        // even when the key signature carries a different casing.
+        MUSICALMODES.MyMode = [3, 2, 3, 2, 2];
+        expect(keySignatureToMode("C MyMode")).toEqual(["C", "MyMode"]);
+        expect(keySignatureToMode("C mymode")).toEqual(["C", "MyMode"]);
+        expect(keySignatureToMode("C MYMODE")).toEqual(["C", "MyMode"]);
+        delete MUSICALMODES.MyMode;
+    });
 });
 
 describe("getScaleAndHalfSteps", () => {
@@ -1767,6 +1807,19 @@ describe("scalePatternToEDO", () => {
     it("clamps steps to a minimum of 1 for small EDOs", () => {
         expect(scalePatternToEDO(major, 5)).toEqual([1, 1, 1, 1, 1, 1, 1]);
     });
+
+    it("scales a 19-summing pattern down to 12 (mismatched-request direction)", () => {
+        // A native 19-EDO pattern asked for at EDO 12 must compress, not pass through.
+        const nineteen = [4, 3, 2, 3, 4, 3]; // hypothetical 19-EDO major, sums to 19
+        const out = scalePatternToEDO(nineteen, 12);
+        expect(out.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(12 + out.length);
+        expect(out.every(s => s >= 1)).toBe(true);
+    });
+
+    it("returns the pattern unchanged when its sum equals the requested EDO", () => {
+        const p = [3, 3, 3, 3, 3, 3, 3]; // sums to 21
+        expect(scalePatternToEDO(p, 21)).toEqual(p);
+    });
 });
 
 describe("getModePattern", () => {
@@ -1785,6 +1838,17 @@ describe("getModePattern", () => {
 
     it("keeps the 12-EDO pattern identical", () => {
         expect(getModePattern("major", 12)).toEqual([2, 2, 1, 2, 2, 2, 1]);
+    });
+
+    it("rescales a native 19-EDO custom mode requested at EDO 12", () => {
+        MUSICALMODES._nineteenNative = [4, 3, 2, 3, 4, 3]; // sums to 19
+        try {
+            const out = getModePattern("_nineteenNative", 12);
+            expect(out).not.toEqual(MUSICALMODES._nineteenNative);
+            expect(out.every(s => s >= 1)).toBe(true);
+        } finally {
+            delete MUSICALMODES._nineteenNative;
+        }
     });
 });
 
@@ -3764,5 +3828,150 @@ describe("getStepSizeDown with custom temperament", () => {
         // proportional 12-EDO result (-2) produced by the PITCHES2 walk.
         const result = getStepSizeDown("C major", "C#", 5, "testWithRatios19");
         expect(result).toBe(-1);
+    });
+});
+
+describe("mode pie menu shared helpers", () => {
+    describe("getModeNamesForGroup", () => {
+        it("returns the built-in group list untouched", () => {
+            const modes = getModeNamesForGroup("7", []);
+            expect(modes.length).toBe(12);
+            expect(modes).toContain("ionian");
+            expect(modes).toContain("aeolian");
+        });
+
+        it("pads the custom group to the fixed 12-slot layout and preserves caller sentinels", () => {
+            const modes = getModeNamesForGroup("custom", ["+", "my mode", "other"]);
+            expect(modes.length).toBe(12);
+            expect(modes.slice(0, 3)).toEqual(["+", "my mode", "other"]);
+            expect(modes.slice(3)).toEqual(new Array(9).fill(" "));
+        });
+    });
+
+    describe("getModeLabel", () => {
+        it("translates the major/ionian pair and leaves blank slots blank", () => {
+            expect(getModeLabel("major")).toBe("major / ionian");
+            expect(getModeLabel("ionian")).toBe("major / ionian");
+            expect(getModeLabel(" ")).toBe(" ");
+        });
+    });
+
+    describe("getModeNameFromLabel", () => {
+        const modes = ["ionian", " ", "dorian", " ", "aeolian"];
+
+        it("resolves the major/ionian label to major", () => {
+            expect(getModeNameFromLabel("major / ionian", modes)).toBe("major");
+        });
+
+        it("falls back to the label itself when nothing matches", () => {
+            expect(getModeNameFromLabel("unknown", modes)).toBe("unknown");
+        });
+    });
+
+    describe("getModeSliceColors", () => {
+        it("maps blanks to the empty color and modes to the filled color", () => {
+            const colors = getModeSliceColors([" ", "dorian", " "], {
+                emptyColor: "empty",
+                filledColor: "filled"
+            });
+            expect(colors).toEqual(["empty", "filled", "empty"]);
+        });
+    });
+
+    describe("updateModeWheelItems", () => {
+        it("updates every title copy and fill attribute then refreshes", () => {
+            const refreshWheel = jest.fn();
+            const wheel = {
+                navItems: [
+                    {
+                        title: "old",
+                        basicNavTitleMax: {},
+                        basicNavTitleMin: {},
+                        hoverNavTitleMax: {},
+                        hoverNavTitleMin: {},
+                        selectedNavTitleMax: {},
+                        selectedNavTitleMin: {},
+                        initNavTitle: {},
+                        fillAttr: "old",
+                        sliceHoverAttr: {},
+                        slicePathAttr: {},
+                        sliceSelectedAttr: {}
+                    }
+                ],
+                refreshWheel
+            };
+
+            updateModeWheelItems(wheel, ["new"], ["#123456"]);
+
+            const item = wheel.navItems[0];
+            expect(item.title).toBe("new");
+            expect(item.basicNavTitleMax.title).toBe("new");
+            expect(item.basicNavTitleMin.title).toBe("new");
+            expect(item.hoverNavTitleMax.title).toBe("new");
+            expect(item.hoverNavTitleMin.title).toBe("new");
+            expect(item.selectedNavTitleMax.title).toBe("new");
+            expect(item.selectedNavTitleMin.title).toBe("new");
+            expect(item.initNavTitle.title).toBe("new");
+            expect(item.fillAttr).toBe("#123456");
+            expect(item.sliceHoverAttr.fill).toBe("#123456");
+            expect(item.slicePathAttr.fill).toBe("#123456");
+            expect(item.sliceSelectedAttr.fill).toBe("#123456");
+            expect(refreshWheel).toHaveBeenCalled();
+        });
+    });
+
+    describe("shared mode pie menu geometry", () => {
+        it("scales the group title font with the wheel radius", () => {
+            expect(getModeGroupTitleFont(200)).toBe("100 16px sans-serif");
+            expect(getModeGroupTitleFont(600)).toBe("100 48px sans-serif");
+        });
+    });
+
+    describe("getSavedCustomModes", () => {
+        afterEach(() => {
+            localStorage.clear();
+        });
+
+        it("parses saved modes and keeps only entries with a string name", () => {
+            localStorage.setItem(
+                "customModes",
+                JSON.stringify([{ name: "my mode", pattern: [1, 2] }, { pattern: [1] }, null])
+            );
+            expect(getSavedCustomModes()).toEqual([{ name: "my mode", pattern: [1, 2] }]);
+        });
+
+        it("returns an empty list for corrupt or non-array data", () => {
+            localStorage.setItem("customModes", "{not json");
+            expect(getSavedCustomModes()).toEqual([]);
+            localStorage.setItem("customModes", JSON.stringify({ name: "not an array" }));
+            expect(getSavedCustomModes()).toEqual([]);
+        });
+    });
+});
+
+describe("non-EDO temperament helpers", () => {
+    describe("isNonEDO", () => {
+        it("is true for just intonation (ratios, unequal)", () => {
+            expect(isNonEDO("just intonation")).toBe(true);
+        });
+        it("is false for equal temperament", () => {
+            expect(isNonEDO("equal")).toBe(false);
+        });
+        it("is false for unknown or missing temperaments", () => {
+            expect(isNonEDO("not-a-temperament")).toBe(false);
+            expect(isNonEDO(undefined)).toBe(false);
+        });
+    });
+
+    describe("getNonEDOModeSteps", () => {
+        it("derives meantone-like integer steps from ratios for major", () => {
+            // 5-limit JI major: cumulative semitones 0,2,4,5,7,9,11 map onto
+            // the 12-entry ratio table at indices 0,2,4,5,7,9,11.
+            const steps = getNonEDOModeSteps("major", "just intonation");
+            expect(steps).toEqual([2, 2, 1, 2, 2, 2, 1]);
+        });
+        it("returns null for a temperament without usable ratios", () => {
+            expect(getNonEDOModeSteps("major", "_no_ratios")).toBeNull();
+        });
     });
 });

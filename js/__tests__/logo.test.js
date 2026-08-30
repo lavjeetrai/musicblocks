@@ -969,6 +969,15 @@ describe("Logo doStopTurtles", () => {
         expect(logo.safePluginExecute).toHaveBeenNthCalledWith(2, "code-second", logo);
     });
 
+    test("preserves the drawing on explicit Stop (#8154 follow-up)", () => {
+        logo.doStopTurtles();
+
+        // Stopping a run must not wipe the canvas: the artwork drawn so far
+        // stays on screen, and the next Run clears it via
+        // ToolbarController._clearAllTurtles().
+        expect(turtle.painter.doClear).not.toHaveBeenCalled();
+    });
+
     test("clears delayTimeout for turtles with a pending timer", () => {
         const TIMER_ID = 456;
         const clearTimeoutSpy = jest.spyOn(global, "clearTimeout").mockImplementation(() => {});
@@ -985,6 +994,20 @@ describe("Logo doStopTurtles", () => {
         logo.doStopTurtles();
 
         expect(clearAllSpy).toHaveBeenCalled();
+    });
+
+    test("removes active turtle listeners from stage and clears listeners object on stop", () => {
+        const mockListener = jest.fn();
+        turtle.listeners = { __beat_1_0__: mockListener };
+
+        logo.doStopTurtles();
+
+        expect(mockActivity.stage.removeEventListener).toHaveBeenCalledWith(
+            "__beat_1_0__",
+            mockListener,
+            false
+        );
+        expect(turtle.listeners).toEqual({});
     });
 
     describe("with Transport and audio streams", () => {
@@ -2066,8 +2089,8 @@ describe("Logo clearTurtleRun", () => {
 
     afterEach(() => jest.restoreAllMocks());
 
-    test("clears timeout and resumes execution", () => {
-        const clearTimeoutSpy = jest.spyOn(global, "clearTimeout").mockImplementation(() => {});
+    test("cancels the managed timeout and resumes execution", () => {
+        const clearTimeoutSpy = jest.spyOn(logo.timerManager, "clearTimeout").mockReturnValue(true);
         turtle0.delayTimeout = 123;
         turtle0.delayParameters = { blk: 4, flow: 1, arg: ["p"] };
 
@@ -2075,6 +2098,23 @@ describe("Logo clearTurtleRun", () => {
 
         expect(clearTimeoutSpy).toHaveBeenCalledWith(123);
         expect(logo.runFromBlockNow).toHaveBeenCalledWith(logo, 0, 4, 1, ["p"]);
+    });
+
+    test("removes a cancelled delay timeout from the managed timer set", () => {
+        const pendingCallback = jest.fn();
+        turtle0.delayTimeout = logo.timerManager.setGuardedTimeout(
+            pendingCallback,
+            60000,
+            () => false
+        );
+        turtle0.delayParameters = { blk: 4, flow: 1, arg: ["p"] };
+
+        expect(logo.timerManager.activeTimeoutCount).toBe(1);
+
+        logo.clearTurtleRun(0);
+
+        expect(logo.timerManager.activeTimeoutCount).toBe(0);
+        expect(logo.timerManager.getStats().cancelled).toBe(1);
     });
 
     describe("with Transport", () => {
@@ -2642,6 +2682,34 @@ describe("Logo initMediaDevices", () => {
             undefined
         );
         expect(logo.mic).toBeNull();
+    });
+
+    test("closes the previous mic stream instead of dropping the reference", () => {
+        const firstClose = jest.fn();
+        logo.deps.Tone = {
+            UserMedia: jest.fn(() => ({ open: jest.fn(), close: firstClose }))
+        };
+
+        // Simulate a loudness/pitchness block being created a second time
+        // (e.g. a second such block in the same project, or the project
+        // being reloaded) while the first mic stream is still open.
+        logo.initMediaDevices();
+        expect(firstClose).not.toHaveBeenCalled();
+
+        logo.deps.Tone = {
+            UserMedia: jest.fn(() => ({ open: jest.fn(), close: jest.fn() }))
+        };
+        logo.initMediaDevices();
+
+        expect(firstClose).toHaveBeenCalledTimes(1);
+    });
+
+    test("does not throw when the previous mic has no close method", () => {
+        logo.deps.Tone = { UserMedia: jest.fn(() => ({ open: jest.fn() })) };
+        logo.initMediaDevices();
+
+        logo.deps.Tone = { UserMedia: jest.fn(() => ({ open: jest.fn() })) };
+        expect(() => logo.initMediaDevices()).not.toThrow();
     });
 });
 

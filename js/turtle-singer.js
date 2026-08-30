@@ -19,12 +19,14 @@
    global
 
    DEFAULTVOLUME, TARGETBPM, TONEBPM, MIN_HIGHLIGHT_DURATION_MS, deepClone, frequencyToPitch, last,
-   pitchToFrequency, getNote, isCustomTemperament, getStepSizeUp,
-   getStepSizeDown, numberToPitch, pitchToNumber, rationalSum,
+    pitchToFrequency, getNote, isCustomTemperament, getStepSizeUp,
+    getStepSizeDown, numberToPitch, pitchToNumber, rationalSum,
+    temperamentHasRatios, isEquallyTempered,
    noteIsSolfege, getSolfege, SOLFEGENAMES1, SOLFEGECONVERSIONTABLE,
    getInterval, instrumentsEffects, instrumentsFilters, _, DEFAULTVOICE,
    noteToFrequency, getTemperament, getOctaveRatio, rationalToFraction,
-   SEMITONES, normalizeNoteAccidentals, parseNoteString, getCurrentEDO, isTrueEDO,
+   SEMITONES, normalizeNoteAccidentals, parseNoteString, getCurrentEDO,
+   keySignatureToMode, getSavedCustomModes,
    clampNumber
  */
 
@@ -36,7 +38,7 @@
         frequencyToPitch, pitchToFrequency, getNote, isCustomTemperament, getStepSizeUp, getStepSizeDown,
         numberToPitch, pitchToNumber, noteIsSolfege, getSolfege, SOLFEGENAMES1,
         SOLFEGECONVERSIONTABLE, getInterval, noteToFrequency, getTemperament, getOctaveRatio,
-        getCurrentEDO
+        getCurrentEDO, isEquallyTempered
     js/utils/utils.js
         rationalSum, _, rationalToFraction
     js/utils/synthutils.js
@@ -325,23 +327,15 @@ class Singer {
             temperament
         );
 
-        if (isCustomTemperament(temperament)) {
-            noteObj = getNote(
-                noteObj[0],
-                noteObj[1],
-                steps > 0
-                    ? getStepSizeUp(tur.singer.keySignature, noteObj[0], steps, temperament, edo)
-                    : getStepSizeDown(tur.singer.keySignature, noteObj[0], steps, temperament, edo),
-                tur.singer.keySignature,
-                tur.singer.movable,
-                null,
-                activity.errorMsg,
-                temperament,
-                false,
-                false // allow octave wrap for scalar traversal
-            );
-        } else if (!isTrueEDO(temperament)) {
-            const curTemp = temperament;
+        // Equal temperaments step by resolved EDO degrees; customs without
+        // ratios step by raw semitone offsets. Everything with real ratios
+        // (just intonation, meantone, ...) walks the mode's actual scale
+        // degrees one at a time.
+        const useEdoSteps =
+            isEquallyTempered(temperament) ||
+            (isCustomTemperament(temperament) && !temperamentHasRatios(temperament));
+
+        if (useEdoSteps) {
             for (let i = 0; i < Math.abs(steps); i++) {
                 const stepEdo =
                     steps > 0
@@ -349,14 +343,14 @@ class Singer {
                               tur.singer.keySignature,
                               noteObj[0],
                               undefined,
-                              curTemp,
+                              temperament,
                               edo
                           )
                         : getStepSizeDown(
                               tur.singer.keySignature,
                               noteObj[0],
                               undefined,
-                              curTemp,
+                              temperament,
                               edo
                           );
                 noteObj = getNote(
@@ -367,43 +361,50 @@ class Singer {
                     tur.singer.movable,
                     null,
                     activity.errorMsg,
-                    curTemp,
+                    temperament,
                     true, // isAlreadyEdoSteps
                     false // allow octave wrap
                 );
             }
         } else {
-            const curTemp = temperament;
-
-            const curEDO = edo;
+            // Non-EDO ratio temperament: step by actual scale degrees. Build the
+            // scale at the mode's own EDO (a saved custom mode carries its native
+            // EDO; built-ins fall back to the temperament's pitch count) so the
+            // step reflects the real degree spacing, then normalize to a semitone
+            // offset that getNote remaps onto the temperament's ratios.
+            const modeName = keySignatureToMode(tur.singer.keySignature)[1];
+            const custom = getSavedCustomModes().find(m => m.name === modeName);
+            const modeEdo = (custom && custom.edo) || edo;
             for (let i = 0; i < Math.abs(steps); i++) {
-                const stepEdo =
+                const stepCount =
                     steps > 0
                         ? getStepSizeUp(
                               tur.singer.keySignature,
                               noteObj[0],
                               undefined,
-                              curTemp,
-                              curEDO
+                              temperament,
+                              modeEdo
                           )
                         : getStepSizeDown(
                               tur.singer.keySignature,
                               noteObj[0],
                               undefined,
-                              curTemp,
-                              curEDO
+                              temperament,
+                              modeEdo
                           );
-
+                // getStepSizeUp returns EDO-step counts off 12-EDO; normalize to
+                // a semitone offset (isAlreadyEdoSteps=false) so getNote remaps it.
+                const stepSemis = (stepCount * 12) / modeEdo;
                 noteObj = getNote(
                     noteObj[0],
                     noteObj[1],
-                    stepEdo,
+                    stepSemis,
                     tur.singer.keySignature,
                     tur.singer.movable,
                     null,
                     activity.errorMsg,
-                    curTemp,
-                    true,
+                    temperament,
+                    false, // isAlreadyEdoSteps — stepSemis is a raw semitone offset
                     false // allow octave wrap
                 );
             }

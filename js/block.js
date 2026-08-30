@@ -594,6 +594,9 @@ class Block {
             if (typeof this.container.uncache === "function") {
                 this.container.uncache();
             }
+            if (this.container.parent && typeof this.container.parent.removeChild === "function") {
+                this.container.parent.removeChild(this.container);
+            }
             this.container = null;
         }
 
@@ -3157,9 +3160,11 @@ class Block {
 
                         setTimeout(() => {
                             that.activity.logo.runLogoCommands(topBlock);
+                            that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                         }, 250);
                     } else {
                         that.activity.logo.runLogoCommands(topBlock);
+                        that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                     }
 
                     return;
@@ -3213,9 +3218,11 @@ class Block {
 
                             setTimeout(() => {
                                 that.activity.logo.runLogoCommands(topBlk);
+                                that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                             }, 250);
                         } else {
                             that.activity.logo.runLogoCommands(topBlk);
+                            that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                         }
                     }
                 }
@@ -3231,9 +3238,11 @@ class Block {
 
                         setTimeout(() => {
                             that.activity.logo.runLogoCommands(topBlk);
+                            that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                         }, 250);
                     } else {
                         that.activity.logo.runLogoCommands(topBlk);
+                        that.activity.toolbar.highlightStop(platformColor.stopIconcolor);
                     }
                 }
             }
@@ -3973,7 +3982,7 @@ class Block {
                     if (temperament && typeof temperament === "object") {
                         noteLabels[keys[i]] = temperament;
                     }
-                    if (isCustomTemperament(keys[i])) {
+                    if (isCustomTemperament(keys[i]) && temperament && !temperament.isEDO) {
                         customLabels.push(keys[i]);
                     }
                 }
