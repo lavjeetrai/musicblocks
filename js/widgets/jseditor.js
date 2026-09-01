@@ -22,7 +22,7 @@
  * Private members' names begin with underscore '_".
  */
 
-/* global docById, MusicBlocks, hljs, CodeJar, JSGenerate, JS_API */
+/* global docById, MusicBlocks, hljs, CodeJar, JSGenerate, JS_API, pubsub */
 
 /* exported JSEditor */
 
@@ -288,6 +288,15 @@ class JSEditor {
                 document.removeEventListener("mousemove", this._resizeHandlers.doResize);
                 document.removeEventListener("mouseup", this._resizeHandlers.stopResize);
                 this._resizeHandlers = null;
+            }
+            // Each open() adds a fresh set of theme <link> elements to
+            // document.head (see constructor); remove this instance's set
+            // on close so repeated open/close cycles don't leak them.
+            if (this._styles) {
+                for (const link of this._styles) {
+                    link.remove();
+                }
+                this._styles = null;
             }
             this.isOpen = false;
             defaultOnClose();
@@ -970,7 +979,7 @@ class JSEditor {
         JSEditor.clearConsole();
 
         try {
-            if (!ast2blocklist_config && window.ast2blocklist_config_ready) {
+            if (!window.ast2blocklist_config && window.ast2blocklist_config_ready) {
                 try {
                     await window.ast2blocklist_config_ready;
                 } catch {
@@ -978,7 +987,7 @@ class JSEditor {
                 }
             }
 
-            if (!ast2blocklist_config) {
+            if (!window.ast2blocklist_config) {
                 throw new Error(
                     window.ast2blocklist_config_failed
                         ? _(
@@ -989,17 +998,28 @@ class JSEditor {
             }
 
             let ast = acorn.parse(this._code, { ecmaVersion: 2020 });
-            let blockList = AST2BlockList.toBlockList(ast, ast2blocklist_config);
+            let blockList = AST2BlockList.toBlockList(ast, window.ast2blocklist_config);
             const activity = this.activity;
-            // Wait for the old blocks to be removed, then load new blocks.
-            const __listener = event => {
-                activity.blocks.loadNewBlocks(blockList);
+            // Wait for blocks to be trashed, loaded, and fully processed
+            // before returning. loadNewBlocks processes blocks in async
+            // chunks, so we must wait for the "finishedLoading" pubsub
+            // event which fires after all blocks are ready.
+            await new Promise(resolve => {
+                const __afterLoad = () => {
+                    pubsub.off("finishedLoading", __afterLoad);
+                    resolve();
+                };
+                pubsub.on("finishedLoading", __afterLoad);
+
+                const __listener = () => {
+                    activity.blocks.loadNewBlocks(blockList);
+                    activity.stage.removeAllEventListeners("trashsignal");
+                };
                 activity.stage.removeAllEventListeners("trashsignal");
-            };
-            activity.stage.removeAllEventListeners("trashsignal");
-            activity.stage.addEventListener("trashsignal", __listener, false);
-            // Clear the canvas but leave the JS editor open
-            activity.sendAllToTrash(false, false, false);
+                activity.stage.addEventListener("trashsignal", __listener, false);
+                // Clear the canvas but leave the JS editor open
+                activity.sendAllToTrash(false, false, false);
+            });
         } catch (e) {
             JSEditor.logConsole(
                 "message" in e ? e.message : e.prefix + this._code.substring(e.start, e.end),

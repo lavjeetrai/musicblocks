@@ -534,6 +534,10 @@ describe("setupPitchBlocks", () => {
             turtles.ithTurtle(0).singer.lastNotePlayed = ["C4", 0.5];
             block.setter(logo, 60, 0);
             expect(turtles.ithTurtle(0).singer.lastNotePlayed).toBeDefined();
+
+            turtles.ithTurtle(0).singer.lastNotePlayed = null;
+            block.setter(logo, 60, 0);
+            expect(turtles.ithTurtle(0).singer.lastNotePlayed).toEqual(["C5", 4]);
         });
     });
 
@@ -1371,6 +1375,16 @@ describe("setupPitchBlocks", () => {
                     block.setter(logo, 60, 0);
                     expect(turtles.ithTurtle(0).singer.lastNotePlayed).toBeDefined();
                     expect(turtles.ithTurtle(0).singer.previousNotePlayed).toBeDefined();
+                }
+            });
+
+            it("MyPitchBlock setter does not crash when lastNotePlayed is null", () => {
+                const block = createdBlocks["mypitch"];
+                if (block && block.setter) {
+                    turtles.ithTurtle(0).singer.lastNotePlayed = null;
+                    expect(() => block.setter(logo, 60, 0)).not.toThrow();
+                    expect(turtles.ithTurtle(0).singer.lastNotePlayed).toBeDefined();
+                    expect(turtles.ithTurtle(0).singer.lastNotePlayed[1]).toBe(4);
                 }
             });
         });

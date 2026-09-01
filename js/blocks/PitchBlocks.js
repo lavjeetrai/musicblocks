@@ -285,7 +285,7 @@ function setupPitchBlocks(activity) {
                 undefined,
                 activity
             );
-            tur.singer.lastNotePlayed = [obj[0] + obj[1], tur.singer.lastNotePlayed[1]];
+            tur.singer.lastNotePlayed = [obj[0] + obj[1], tur.singer.lastNotePlayed?.[1] ?? 4];
         }
 
         arg(logo, turtle, blk) {
