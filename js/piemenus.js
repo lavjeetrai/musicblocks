@@ -3104,14 +3104,10 @@ const piemenuVoices = (block, voiceLabels, voiceValues, categories, voice, rotat
     block._voiceWheel.animatetime = 0; // 300;
     block._voiceWheel.createWheel(voiceLabels);
 
-    // Special case for Japanese
-    // const language = localStorage.languagePreference;
-    // if (language === 'ja') {
     for (let i = 0; i < block._voiceWheel.navItems.length; i++) {
         block._voiceWheel.navItems[i].titleAttr.font = "30 30px sans-serif";
         block._voiceWheel.navItems[i].titleSelectedAttr.font = "30 30px sans-serif";
     }
-    // }
 
     block._exitWheel.colors = platformColor.exitWheelcolors;
     block._exitWheel.slicePathFunction = slicePath().DonutSlice;
