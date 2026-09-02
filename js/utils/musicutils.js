@@ -1036,6 +1036,14 @@ function generateNoteNames(edo) {
         const nextNatural = naturals[(n + 1) % 7];
         const edoSteps = intervals[n].steps;
 
+        // An interval can be allotted zero steps when the octave has fewer
+        // divisions than there are natural letters (EDO < 7). Emitting the
+        // letter anyway would push the table past `edo` entries and break the
+        // length contract callers rely on, so skip letters with no room.
+        if (edoSteps === 0) {
+            continue;
+        }
+
         names.push(natural);
 
         const numAccidentals = edoSteps - 1;
@@ -8007,7 +8015,7 @@ const calcOctaveInterval = arg => {
  * @returns {boolean} True if the value is an integer, false otherwise.
  */
 const isInt = value => {
-    return !isNaN(value) && parseInt(Number(value), 10) === value && !isNaN(parseInt(value, 10));
+    return !isNaN(parseFloat(value)) && Number.isInteger(Number(value));
 };
 
 /**
