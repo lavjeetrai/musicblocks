@@ -2546,6 +2546,38 @@ describe("Blocks Foundation", () => {
         });
     });
 
+    describe("updateBlockText", () => {
+        let blocks;
+
+        beforeEach(() => {
+            blocks = new Blocks({});
+        });
+
+        it("should handle error in audiofile block and set label to audio file", () => {
+            const errorBlock = {
+                name: "audiofile",
+                get value() {
+                    throw new Error("Simulated error");
+                },
+                hasWideLabel: () => true, // audiofile gets wide label, or we can just mock true so it doesn't get truncated
+                text: { text: "" },
+                container: {
+                    children: { length: 1 },
+                    setChildIndex: jest.fn(),
+                    updateCache: jest.fn()
+                },
+                loadComplete: true
+            };
+
+            blocks.blockList = [errorBlock];
+
+            expect(() => blocks.updateBlockText(0)).not.toThrow();
+            // In the fallback switch for "audiofile" it ends up setting it to "audio file"
+            // The truncation logic will not truncate if hasWideLabel is true.
+            expect(errorBlock.text.text).toBe("audio file");
+        });
+    });
+
     describe("wideLabel Capability Migration", () => {
         let blocks;
 
