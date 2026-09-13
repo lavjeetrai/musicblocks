@@ -2071,6 +2071,38 @@ describe("Blocks Foundation", () => {
         });
     });
 
+
+    describe("updateBlockText error handling", () => {
+        let blocks;
+
+        beforeEach(() => {
+            blocks = new Blocks({});
+            global._ = msg => msg;
+        });
+
+        it("falls back to 'open file' when loadFile block value is invalid", () => {
+            const mockBlock = {
+                name: "loadFile",
+                value: [{
+                    toString: () => { throw new Error("Invalid"); }
+                }],
+                text: { text: "" },
+                container: {
+                    children: { length: 1 },
+                    setChildIndex: jest.fn(),
+                    updateCache: jest.fn()
+                },
+                loadComplete: true,
+                hasWideLabel: () => false
+            };
+
+            blocks.blockList = [mockBlock];
+            blocks.updateBlockText(0);
+
+            expect(mockBlock.text.text).toBe("open file");
+        });
+    });
+
     describe("wideLabel Capability Migration", () => {
         let blocks;
 
