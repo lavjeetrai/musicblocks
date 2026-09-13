@@ -85,8 +85,6 @@ global.MODE_PIE_MENUS = {
     custom: [" ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " ", " "]
 };
 const {
-    MODEPIEMENU_GROUP_RING,
-    MODEPIEMENU_NAME_RING,
     getSavedCustomModes,
     getModeNamesForGroup,
     getModeLabel,
@@ -103,8 +101,6 @@ const {
     isEquallyTempered,
     pitchToFrequency
 } = require("../../utils/musicutils.js");
-global.MODEPIEMENU_GROUP_RING = MODEPIEMENU_GROUP_RING;
-global.MODEPIEMENU_NAME_RING = MODEPIEMENU_NAME_RING;
 global.getSavedCustomModes = getSavedCustomModes;
 global.getModeNamesForGroup = getModeNamesForGroup;
 global.getModeLabel = getModeLabel;
@@ -114,7 +110,6 @@ global.updateModeWheelItems = updateModeWheelItems;
 global.getModeGroupTitleFont = getModeGroupTitleFont;
 global.getModeSliceFont = getModeSliceFont;
 global.configureWheel = configureWheel;
-global.configureExitWheel = jest.fn();
 global.scalePatternToEDO = scalePatternToEDO;
 global.isNonEDO = isNonEDO;
 global.getNonEDOModeSteps = getNonEDOModeSteps;
@@ -236,7 +231,11 @@ window.widgetWindows = {
             return btn;
         }),
         getWidgetBody: jest.fn().mockReturnValue({
+            style: {},
+            children: [{ style: {} }],
+            offsetHeight: 400,
             append: jest.fn(),
+            appendChild: jest.fn(),
             getElementsByTagName: jest.fn().mockReturnValue([
                 {
                     style: {},
@@ -266,6 +265,11 @@ document.createElement = jest.fn().mockImplementation(tag => ({
     replaceChildren: jest.fn(),
     removeChild: jest.fn(),
     firstChild: null,
+    children: [{ style: {} }],
+    querySelector: jest.fn().mockReturnValue({
+        style: {},
+        setAttribute: jest.fn()
+    }),
     insertRow: jest.fn().mockReturnValue({
         insertCell: jest.fn().mockReturnValue({
             style: {},
@@ -381,31 +385,57 @@ describe("ModeWidget", () => {
 
     test("non-EDO labeled temperament plays the octave an octave up", () => {
         const labels = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-        const savedTemperament = global.TEMPERAMENT;
-        const savedSpy = global.pitchToFrequency;
-        global.TEMPERAMENT = {
-            testNonEDO: {
-                isEDO: false,
-                noteLabels: labels,
-                ratios: labels.map((_, i) => Math.pow(2, i / 12))
-            }
+        const mu = require("../../utils/musicutils");
+        const saved = mu.TEMPERAMENT.testNonEDO;
+        const savedGlobal = global.TEMPERAMENT.testNonEDO;
+        const entry = {
+            isEDO: false,
+            noteLabels: labels,
+            ratios: labels.map((_, i) => Math.pow(2, i / 12))
         };
-        modeWidget._activeTemperamentKey = "testNonEDO";
-        modeWidget._activeEDO = labels.length;
-        const spy = jest.spyOn(global, "pitchToFrequency");
+        mu.TEMPERAMENT.testNonEDO = entry;
+        global.TEMPERAMENT.testNonEDO = entry;
+        try {
+            modeWidget._activeTemperamentKey = "testNonEDO";
+            modeWidget._activeEDO = labels.length;
+            mockActivity.logo.synth.trigger.mockClear();
 
-        // Within-octave degree stays at octave 4.
-        modeWidget._triggerNote(1, labels.length);
-        expect(spy).toHaveBeenLastCalledWith(labels[1], 4, 0, ["C"], "testNonEDO");
+            // Within-octave degree stays at octave 4.
+            modeWidget._triggerNote(1, labels.length);
+            const expected1 = mu.pitchToFrequency(labels[1], 4, 0, ["C"], "testNonEDO");
+            expect(mockActivity.logo.synth.trigger).toHaveBeenLastCalledWith(
+                0,
+                expected1,
+                modeWidget._noteValue,
+                DEFAULTVOICE,
+                null,
+                null
+            );
 
-        // The octave note (index === n) wraps to the root label but must
-        // sound an octave higher (octave 5), not the starting note.
-        modeWidget._triggerNote(labels.length, labels.length);
-        expect(spy).toHaveBeenLastCalledWith(labels[0], 5, 0, ["C"], "testNonEDO");
-
-        spy.mockRestore();
-        global.pitchToFrequency = savedSpy;
-        global.TEMPERAMENT = savedTemperament;
+            // The octave note (index === n) wraps to the root label but must
+            // sound an octave higher (octave 5), not the starting note.
+            modeWidget._triggerNote(labels.length, labels.length);
+            const expectedOct = mu.pitchToFrequency(labels[0], 5, 0, ["C"], "testNonEDO");
+            expect(mockActivity.logo.synth.trigger).toHaveBeenLastCalledWith(
+                0,
+                expectedOct,
+                modeWidget._noteValue,
+                DEFAULTVOICE,
+                null,
+                null
+            );
+        } finally {
+            if (saved) {
+                mu.TEMPERAMENT.testNonEDO = saved;
+            } else {
+                delete mu.TEMPERAMENT.testNonEDO;
+            }
+            if (savedGlobal) {
+                global.TEMPERAMENT.testNonEDO = savedGlobal;
+            } else {
+                delete global.TEMPERAMENT.testNonEDO;
+            }
+        }
     });
 
     test("should initialize a custom mode with only the root selected", () => {
@@ -671,7 +701,12 @@ describe("ModeWidget", () => {
         modeWidget._selectedNotes = Array.from({ length: 19 }, (_, i) =>
             [0, 3, 5, 8, 11, 13, 16].includes(i)
         );
-        global.getModePattern.mockReturnValue([3, 2, 3, 3, 2, 3, 3]);
+        // Return mode-specific patterns so the hash map has distinct entries.
+        global.getModePattern.mockImplementation((_mode, _edo) => {
+            if (_mode === "ionian") return [3, 2, 3, 3, 2, 3, 3];
+            return [2, 2, 1, 2, 2, 2, 1];
+        });
+        modeWidget._rebuildModeIndex();
 
         modeWidget._setModeName();
 
@@ -729,11 +764,10 @@ describe("ModeWidget", () => {
 
         test("intercept applies mode selection via _loadMode", () => {
             modeWidget._piemenuModes();
-            const mockBlock = modeWidget._mockBlock;
+            const [, , onSelect] = global.piemenuModes.mock.calls[0];
+            expect(typeof onSelect).toBe("function");
 
-            // Simulate piemenu setting a mode value
-            mockBlock.value = "major";
-            mockBlock.__selectionChanged();
+            onSelect("major", "major");
 
             expect(modeWidget._selectedModeName).toBe("major");
         });
@@ -773,6 +807,92 @@ describe("ModeWidget", () => {
             expect(modeWidget._modePiemenuOpen).toBe(true);
             modeWidget._onModePieButtonClick();
             expect(modeWidget._modePiemenuOpen).toBe(false);
+        });
+    });
+
+    describe("window maximization and scaling", () => {
+        test("widgetWindow.onmaximize is bound to the ModeWidget instance", () => {
+            const widget = new ModeWidget(mockActivity);
+            const mockSvg = { style: {}, setAttribute: jest.fn() };
+            widget._meterWheelDiv = { querySelector: jest.fn().mockReturnValue(mockSvg) };
+
+            expect(typeof widget.widgetWindow.onmaximize).toBe("function");
+
+            // Invoke as WidgetWindow would invoke it (this = widgetWindow)
+            widget.widgetWindow.onmaximize.call(widget.widgetWindow);
+
+            // Verify _scale ran successfully with correct context by checking SVG was modified
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("height", expect.any(String));
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("width", expect.any(String));
+        });
+
+        test("_scale scales SVG to fit window when maximized", () => {
+            const mockSvg = { style: {}, setAttribute: jest.fn() };
+            modeWidget._meterWheelDiv = { querySelector: jest.fn().mockReturnValue(mockSvg) };
+
+            const originalIsMaximized = modeWidget.widgetWindow.isMaximized;
+            const originalGetFrame = modeWidget.widgetWindow.getWidgetFrame;
+            const originalGetDrag = modeWidget.widgetWindow.getDragElement;
+            const originalGetBody = modeWidget.widgetWindow.getWidgetBody;
+
+            modeWidget.widgetWindow.isMaximized = jest.fn().mockReturnValue(true);
+            modeWidget.widgetWindow.getWidgetFrame = jest
+                .fn()
+                .mockReturnValue({ offsetHeight: 500 });
+            modeWidget.widgetWindow.getDragElement = jest
+                .fn()
+                .mockReturnValue({ offsetHeight: 20 });
+            const widgetBody = { style: {}, offsetHeight: 400, children: [{ style: {} }] };
+            modeWidget.widgetWindow.getWidgetBody = jest.fn().mockReturnValue(widgetBody);
+
+            modeWidget._scale();
+
+            const expectedScale = (500 - 20) / 400; // windowHeight / bodyHeight = 1.2
+            const expectedSize = `${400 * expectedScale}px`; // WHEELSIZE (400) * scale
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("height", expectedSize);
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("width", expectedSize);
+
+            // Restore
+            modeWidget.widgetWindow.isMaximized = originalIsMaximized;
+            modeWidget.widgetWindow.getWidgetFrame = originalGetFrame;
+            modeWidget.widgetWindow.getDragElement = originalGetDrag;
+            modeWidget.widgetWindow.getWidgetBody = originalGetBody;
+        });
+
+        test("_scale resets SVG to default size when unmaximized", () => {
+            const mockSvg = { style: {}, setAttribute: jest.fn() };
+            modeWidget._meterWheelDiv = { querySelector: jest.fn().mockReturnValue(mockSvg) };
+
+            const originalIsMaximized = modeWidget.widgetWindow.isMaximized;
+            modeWidget.widgetWindow.isMaximized = jest.fn().mockReturnValue(false);
+
+            modeWidget._scale();
+
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("height", "400px"); // scale = 1
+            expect(mockSvg.setAttribute).toHaveBeenCalledWith("width", "400px");
+
+            // Restore
+            modeWidget.widgetWindow.isMaximized = originalIsMaximized;
+        });
+
+        test("_scale safely exits if widgetWindow or svg is not available", () => {
+            const mockSvg = { style: {}, setAttribute: jest.fn() };
+            modeWidget._meterWheelDiv = { querySelector: jest.fn().mockReturnValue(mockSvg) };
+
+            // Test: widgetWindow is null
+            const originalWindow = modeWidget.widgetWindow;
+            modeWidget.widgetWindow = null;
+            expect(() => modeWidget._scale()).not.toThrow();
+            expect(mockSvg.setAttribute).not.toHaveBeenCalled();
+
+            // Restore and test: svgContainer is null
+            modeWidget.widgetWindow = originalWindow;
+            modeWidget._meterWheelDiv = null;
+            expect(() => modeWidget._scale()).not.toThrow();
+
+            // Test: svg element is null
+            modeWidget._meterWheelDiv = { querySelector: jest.fn().mockReturnValue(null) };
+            expect(() => modeWidget._scale()).not.toThrow();
         });
     });
 });

@@ -226,12 +226,13 @@ describe("Tempo Widget", () => {
             expect(mockActivity.errorMsg).toHaveBeenCalled();
         });
 
-        test("should accept valid BPM input", () => {
-            tempoWidget.BPMInputs[0].value = 120;
+        test("should accept valid BPM input and parse to a number", () => {
+            tempoWidget.BPMInputs[0].value = "120"; // DOM inputs return strings
 
             tempoWidget._useBPM(0);
 
             expect(tempoWidget.BPMs[0]).toBe(120);
+            expect(typeof tempoWidget.BPMs[0]).toBe("number");
             expect(tempoWidget._intervals[0]).toBe(500); // 60/120 * 1000 = 500ms
         });
 
@@ -241,6 +242,15 @@ describe("Tempo Widget", () => {
             tempoWidget._useBPM(0);
 
             expect(tempoWidget.BPMInputs[0].value).toBe(150);
+        });
+
+        test("should clamp empty string input to 30", () => {
+            tempoWidget.BPMInputs[0].value = "";
+
+            tempoWidget._useBPM(0);
+
+            expect(tempoWidget.BPMs[0]).toBe(30);
+            expect(mockActivity.errorMsg).toHaveBeenCalled();
         });
     });
 
@@ -578,6 +588,27 @@ describe("Tempo Widget", () => {
             canvas.onclick();
 
             expect(tempoWidget._firstClickTime).not.toBeNull();
+        });
+
+        test("init() resets _firstClickTime to null so first tap is always captured", () => {
+            // Simulate a first click that sets _firstClickTime
+            const canvas = tempoWidget.tempoCanvases[0];
+            jest.setSystemTime(1000);
+            canvas.onclick();
+            expect(tempoWidget._firstClickTime).not.toBeNull();
+
+            // Re-initialising the widget must reset _firstClickTime back to null,
+            // so the very next tap is treated as the FIRST tap (not the second).
+            tempoWidget.BPMs = [100];
+            tempoWidget.init(mockActivity);
+            expect(tempoWidget._firstClickTime).toBeNull();
+
+            // After re-init the first tap should set _firstClickTime, not compute a BPM.
+            const canvas2 = tempoWidget.tempoCanvases[0];
+            jest.setSystemTime(2000);
+            canvas2.onclick();
+            expect(tempoWidget._firstClickTime).not.toBeNull();
+            expect(tempoWidget.BPMs[0]).toBe(100); // BPM unchanged on first tap
         });
 
         test("should calculate correct BPM on the second tap", () => {

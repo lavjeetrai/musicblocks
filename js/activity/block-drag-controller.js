@@ -110,6 +110,20 @@ class BlockDragController {
     }
 
     /**
+     * Reconcile spatial-grid positions after a drag that deferred updates.
+     * @public
+     * @returns {void}
+     */
+    syncDragGroupSpatialGrid() {
+        const blocks = this.blocks;
+        const dragGroup = blocks._cachedDragGroup ?? blocks.dragGroup;
+
+        for (const blk of dragGroup) {
+            blocks._updateSpatialGrid(blk);
+        }
+    }
+
+    /**
      * Given a block, find all the blocks connected to it.
      * @param - blk - block
      * @private
@@ -196,10 +210,11 @@ class BlockDragController {
      * @param - blk - block index
      * @param - dx - delta x
      * @param - dy - delta y
+     * @param {boolean} deferSpatialGrid - defer spatial-grid updates until drag release
      * @public
      * @returns {void}
      */
-    moveBlockRelativeBatched(blk, dx, dy) {
+    moveBlockRelativeBatched(blk, dx, dy, deferSpatialGrid = false) {
         const blocks = this.blocks;
         blocks.inLongPress = false;
         blocks.isBlockMoving = true;
@@ -207,7 +222,9 @@ class BlockDragController {
         if (myBlock.container) {
             myBlock.container.x += dx;
             myBlock.container.y += dy;
-            blocks._updateSpatialGrid(blk);
+            if (!deferSpatialGrid) {
+                blocks._updateSpatialGrid(blk);
+            }
         }
     }
 
@@ -402,6 +419,14 @@ class BlockDragController {
 
             /** Don't connect to yourself. */
             if (b === thisBlock) {
+                continue;
+            }
+
+            /** Skip an index the spatial grid returned for a block that no
+             *  longer exists (defense in depth alongside the fix for #8610:
+             *  disposeBlock keeps the grid in sync, but this guard protects
+             *  against any future path that forgets to). */
+            if (!blocks.blockList[b]) {
                 continue;
             }
 
@@ -1023,6 +1048,7 @@ const setupBlockDragController = blocks => {
     blocks.findDragGroup = (...args) => controller.findDragGroup(...args);
     blocks.cacheDragGroup = (...args) => controller.cacheDragGroup(...args);
     blocks.clearCachedDragGroup = (...args) => controller.clearCachedDragGroup(...args);
+    blocks.syncDragGroupSpatialGrid = (...args) => controller.syncDragGroupSpatialGrid(...args);
     blocks.moveBlockRelative = (...args) => controller.moveBlockRelative(...args);
     blocks.moveBlockRelativeBatched = (...args) => controller.moveBlockRelativeBatched(...args);
     blocks.moveStackRelative = (...args) => controller.moveStackRelative(...args);

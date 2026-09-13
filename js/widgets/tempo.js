@@ -56,7 +56,7 @@ class Tempo {
         this._directions = [];
         this._widgetFirstTimes = [];
         this._widgetNextTimes = [];
-        this._firstClickTimes = null;
+        this._firstClickTime = null;
         this._intervals = [];
         this.isMoving = true;
         if (this._intervalID !== undefined && this._intervalID !== null) {
@@ -312,7 +312,7 @@ class Tempo {
             return;
         }
 
-        this.BPMs[i] = this.BPMInputs[i].value;
+        this.BPMs[i] = Number(this.BPMInputs[i].value);
         if (this.BPMs[i] > 1000) {
             this.BPMs[i] = 1000;
             this.activity.errorMsg(_("The beats per minute must be between 30 and 1000."), 3000);

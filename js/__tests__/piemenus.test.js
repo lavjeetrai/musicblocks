@@ -140,8 +140,6 @@ global.getCurrentEDO = jest.fn().mockReturnValue(12);
 global.DEFAULTVOLUME = 0.5;
 global.SHARP = "♯";
 global.FLAT = "♭";
-global.MODEPIEMENU_GROUP_RING = { minRadius: 0.15, maxRadius: 0.3 };
-global.MODEPIEMENU_NAME_RING = { minRadius: 0.3, maxRadius: 0.85 };
 global.getSavedCustomModes = () => [];
 global.getModeNamesForGroup = (grp, customModeNames = []) => {
     if (grp !== "custom") {
@@ -202,15 +200,6 @@ global.DEFAULTVOICE = "sine";
 global.PREVIEWVOLUME = 0.5;
 global.getNote = jest.fn().mockReturnValue(["C", 4]);
 global.buildScale = jest.fn(() => [["C", "D", "E", "F", "G", "A", "B", "C"], []]);
-global.isNonEDO = jest.fn().mockReturnValue(false);
-global.getNonEDOModeSteps = jest.fn().mockReturnValue(null);
-global.pitchToFrequency = jest.fn().mockReturnValue(440);
-global.TEMPERAMENT = {
-    equal: {
-        pitchNumber: 12,
-        noteLabels: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    }
-};
 
 global.DEFAULTVOLUME = 0.5;
 global.Singer = { setSynthVolume: jest.fn() };
@@ -664,11 +653,49 @@ describe("piemenus behavioral tests", () => {
     });
 
     describe("piemenuModes behavioral tests", () => {
+        beforeEach(() => {
+            global.isNonEDO = jest.fn().mockReturnValue(false);
+            global.getNonEDOModeSteps = jest.fn().mockReturnValue(null);
+        });
+
+        test("onSelect is not called during initial navigation", () => {
+            const onSelect = jest.fn();
+            piemenuModes(mockBlock, "ionian", onSelect);
+
+            // The initial navigateWheel to pre-select "ionian" must NOT
+            // trigger onSelect — otherwise the pie menu opens and closes
+            // in the same frame.
+            expect(onSelect).not.toHaveBeenCalled();
+        });
+
+        test("onSelect fires when user clicks a mode slice", () => {
+            const onSelect = jest.fn();
+            piemenuModes(mockBlock, "ionian", onSelect);
+
+            // Simulate user clicking dorian (index 2).
+            mockBlock._modeNameWheel.selectedNavItemIndex = 2;
+            mockBlock._modeNameWheel.navItems[2].navigateFunction();
+
+            expect(onSelect).toHaveBeenCalledTimes(1);
+            expect(onSelect).toHaveBeenCalledWith("dorian", "dorian");
+        });
+
+        test("onSelect is not called when switching mode groups", () => {
+            const onSelect = jest.fn();
+            piemenuModes(mockBlock, "ionian", onSelect);
+
+            // Simulate user clicking a mode group (inner circle).
+            mockBlock._modeGroupWheel.selectedNavItemIndex = 1;
+            mockBlock._modeGroupWheel.navItems[1].navigateFunction();
+
+            // Group switch must NOT fire onSelect — only mode name clicks should.
+            expect(onSelect).not.toHaveBeenCalled();
+        });
+
         test("selecting a mode slice assigns the internal mode name to the block", () => {
             piemenuModes(mockBlock, "ionian");
 
-            // Initial highlight (index 0 = ionian) already fires the selection
-            // handler; navigate to the dorian slice (index 2) explicitly.
+            // Navigate to the dorian slice (index 2) explicitly.
             mockBlock._modeNameWheel.selectedNavItemIndex = 2;
             mockBlock._modeNameWheel.navItems[2].navigateFunction();
 
@@ -816,5 +843,142 @@ describe("pie menu Escape-key dismissal", () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+});
+
+describe("piemenuVoices teardown on close", () => {
+    let mockBlock;
+    let synth;
+
+    const openVoiceMenu = () => {
+        const { piemenuVoices } = require("../piemenus");
+        piemenuVoices(
+            mockBlock,
+            ["guitar", "piano"],
+            ["guitar", "piano"],
+            [0, 0],
+            "guitar",
+            undefined
+        );
+    };
+
+    beforeEach(() => {
+        // Real DOM nodes here: enableWheelScroll() reaches for wheelDiv through
+        // document.getElementById, so a docById stub alone would not be seen.
+        document.body.innerHTML = "";
+        const byId = document.getElementById.bind(document);
+        global.docById = jest.fn(id => {
+            let el = byId(id);
+            if (!el) {
+                el = document.createElement("div");
+                el.id = id;
+                document.body.appendChild(el);
+            }
+            return el;
+        });
+
+        global.localStorage = {};
+        global.platformColor.piemenuVoicesColors = ["#aa0000", "#00aa00"];
+        global.getDrumName = jest.fn().mockReturnValue(null);
+        global.getVoiceSynthName = jest.fn(v => v);
+        global.getDrumSynthName = jest.fn(v => v);
+
+        synth = {
+            createDefaultSynth: jest.fn(),
+            loadSynth: jest.fn(),
+            trigger: jest.fn(),
+            start: jest.fn()
+        };
+
+        mockBlock = {
+            container: { x: 100, y: 100, setChildIndex: jest.fn(), children: [] },
+            blocks: {
+                stageClick: false,
+                blockScale: 1,
+                activeBlock: null,
+                turtles: { _canvas: { width: 1000, height: 1000 } }
+            },
+            activity: {
+                canvas: { offsetLeft: 0, offsetTop: 0 },
+                blocksContainer: { x: 0, y: 0 },
+                getStageScale: jest.fn().mockReturnValue(1),
+                turtles: {
+                    ithTurtle: jest.fn().mockReturnValue({ singer: { instrumentNames: [] } })
+                },
+                logo: { synth, errorMsg: jest.fn() }
+            },
+            updateCache: jest.fn(),
+            text: { text: "" },
+            value: "guitar"
+        };
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    test("the exit button removes both wheels and clears the active block", () => {
+        openVoiceMenu();
+        mockBlock.blocks.activeBlock = mockBlock;
+
+        mockBlock._exitWheel.navItems[0].navigateFunction();
+
+        // wheelnav only detaches its window keydown listener from removeWheel(),
+        // so a menu closed without this keeps answering the arrow keys.
+        expect(mockBlock._voiceWheel.removeWheel).toHaveBeenCalled();
+        expect(mockBlock._exitWheel.removeWheel).toHaveBeenCalled();
+        expect(mockBlock.blocks.activeBlock).toBeNull();
+    });
+
+    test("closing cancels a voice preview that is still waiting on the synth", () => {
+        jest.useFakeTimers();
+
+        try {
+            openVoiceMenu();
+
+            // An instrument the turtle has not loaded defers its preview by 500ms.
+            mockBlock._voiceWheel.selectedNavItemIndex = 1;
+            mockBlock._voiceWheel.navItems[1].navigateFunction();
+
+            mockBlock._exitWheel.navItems[0].navigateFunction();
+            jest.advanceTimersByTime(1000);
+
+            expect(synth.trigger).not.toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    test("the preview still plays while the menu is open", () => {
+        jest.useFakeTimers();
+
+        try {
+            openVoiceMenu();
+
+            mockBlock._voiceWheel.selectedNavItemIndex = 1;
+            mockBlock._voiceWheel.navItems[1].navigateFunction();
+            jest.advanceTimersByTime(1000);
+
+            expect(synth.trigger).toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    test("hiding the wheel div detaches the scroll-to-rotate listener", () => {
+        const { hideWheelDiv } = require("../piemenus");
+
+        openVoiceMenu();
+
+        const wheelDiv = document.getElementById("wheelDiv");
+        const scrollHandler = wheelDiv._scrollHandler;
+        expect(typeof scrollHandler).toBe("function");
+
+        const removeEventListener = jest.spyOn(wheelDiv, "removeEventListener");
+        hideWheelDiv();
+
+        // Left attached, the handler holds the closed menu's wheel and block alive.
+        expect(removeEventListener).toHaveBeenCalledWith("wheel", scrollHandler);
+        expect(wheelDiv._scrollHandler).toBeNull();
     });
 });

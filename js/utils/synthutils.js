@@ -15,7 +15,7 @@
 
    last, Tone, getTemperament, pitchToNumber,
    getNoteFromInterval, FLAT, SHARP, pitchToFrequency, getCustomNote,
-   getOctaveRatio, isCustomTemperament, Singer, DOUBLEFLAT, DOUBLESHARP,
+   getOctaveRatio, isCustomTemperament, isEquallyTempered, Singer, DOUBLEFLAT, DOUBLESHARP,
    DEFAULTDRUM, getOscillatorTypes, numberToPitch, platform,
    getArticulation, piemenuPitches, docById, slicePath, wheelnav, platformColor,
    DEFAULTVOICE, normalizeNoteAccidentals, parseNoteString, clampNumber

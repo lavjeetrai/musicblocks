@@ -40,13 +40,13 @@ function setupNumberBlocks(activity) {
      */
     const toInteger = (logo, value, blk) => {
         if (typeof value === "string") {
-            try {
-                return parseInt(value, 10);
-            } catch (e) {
+            const result = parseInt(value, 10);
+            if (isNaN(result)) {
                 logo.stopTurtle = true;
                 activity.errorMsg(NANERRORMSG, blk);
                 return null;
             }
+            return result;
         }
         return value;
     };
@@ -789,10 +789,8 @@ function setupNumberBlocks(activity) {
                     return MathUtility.doPlus(a, b);
                 } catch (e) {
                     activity.errorMsg(NOINPUTERRORMSG, blk);
+                    console.error(e);
 
-                    console.debug(a + " " + b);
-
-                    console.debug(e);
                     if (!isNaN(a)) {
                         return a;
                     } else if (!isNaN(b)) {
@@ -937,7 +935,7 @@ function setupNumberBlocks(activity) {
             try {
                 return Number(activity.blocks.blockList[blk].value);
             } catch (e) {
-                console.debug(e);
+                console.error(e);
                 return 0;
             }
         }
