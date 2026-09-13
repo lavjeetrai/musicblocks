@@ -1517,12 +1517,12 @@ describe("Palettes Class", () => {
                 if (tag === "table") return paletteBody;
                 if (tag === "tbody") return paletteItems;
                 return {
-                          style: {},
-                          children: [],
-                          appendChild: jest.fn(),
-                          removeAttribute: jest.fn(),
-                          setAttribute: jest.fn()
-                      };
+                    style: {},
+                    children: [],
+                    appendChild: jest.fn(),
+                    removeAttribute: jest.fn(),
+                    setAttribute: jest.fn()
+                };
             });
             global.docById = jest.fn(id => {
                 if (id === "palette") return palDiv;
