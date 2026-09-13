@@ -2703,39 +2703,6 @@ class TimbreWidget {
                         docById("myspanFx1"),
                         docById("myspanFx2")
                     ];
-<<<<<<< HEAD
-                    for (let i = 0; i < 3; i++) {
-                        document
-                            .getElementById("wrapperFx" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = Number(elem.id.slice(-1));
-                                let val = parseFloat(elem.value);
-                                val = Math.round(val * 100) / 100;
-                                if (!instrumentsEffects[0][this.instrumentName]) {
-                                    instrumentsEffects[0][this.instrumentName] = {};
-                                }
-                                myRangeFxs[m].value = val;
-                                myspanFxs[m].textContent = val;
-
-                                if (m === 0) {
-                                    instrumentsEffects[0][this.instrumentName]["chorusRate"] = val;
-                                }
-
-                                if (m === 1) {
-                                    instrumentsEffects[0][this.instrumentName]["delayTime"] = val;
-                                }
-
-                                if (m === 2) {
-                                    instrumentsEffects[0][this.instrumentName]["chorusDepth"] =
-                                        val / 100;
-                                }
-
-                                this.chorusParams[m] = elem.value;
-                                this._update(blockValue, elem.value, m);
-                                this._playNote("G4", 1 / 8);
-                            });
-=======
                     const wrapperFxs = [
                         docById("wrapperFx0"),
                         docById("wrapperFx1"),
@@ -2770,7 +2737,6 @@ class TimbreWidget {
                             this._update(blockValue, elem.value, m);
                             this._playNote("G4", 1 / 8);
                         });
->>>>>>> de89ed6 (perf(timbre): optimize DOM querying in loops)
                     }
                 } else if (effectChosen === "Phaser") {
                     this.isActive["tremolo"] = false;
@@ -2856,39 +2822,6 @@ class TimbreWidget {
                         docById("myspanFx1"),
                         docById("myspanFx2")
                     ];
-<<<<<<< HEAD
-                    for (let i = 0; i < 3; i++) {
-                        document
-                            .getElementById("wrapperFx" + i)
-                            .addEventListener("change", event => {
-                                const elem = event.target;
-                                const m = Number(elem.id.slice(-1));
-                                let val = parseFloat(elem.value);
-                                val = Math.round(val * 100) / 100;
-                                if (!instrumentsEffects[0][this.instrumentName]) {
-                                    instrumentsEffects[0][this.instrumentName] = {};
-                                }
-                                myRangeFxs[m].value = val;
-                                myspanFxs[m].textContent = val;
-
-                                if (m === 0) {
-                                    instrumentsEffects[0][this.instrumentName]["rate"] = val;
-                                }
-
-                                if (m === 1) {
-                                    instrumentsEffects[0][this.instrumentName]["octaves"] = val;
-                                }
-
-                                if (m === 2) {
-                                    instrumentsEffects[0][this.instrumentName]["baseFrequency"] =
-                                        val;
-                                }
-
-                                this.phaserParams[m] = elem.value;
-                                this._update(blockValue, val, m);
-                                this._playNote("G4", 1 / 8);
-                            });
-=======
                     const wrapperFxs = [
                         docById("wrapperFx0"),
                         docById("wrapperFx1"),
@@ -2922,7 +2855,6 @@ class TimbreWidget {
                             this._update(blockValue, val, m);
                             this._playNote("G4", 1 / 8);
                         });
->>>>>>> de89ed6 (perf(timbre): optimize DOM querying in loops)
                     }
                 } else if (effectChosen === "Distortion") {
                     this.isActive["tremolo"] = false;
