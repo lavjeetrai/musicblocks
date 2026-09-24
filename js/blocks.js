@@ -1983,6 +1983,9 @@ class Blocks {
                 case "loadFile":
                     try {
                         label = myBlock.value[0].toString();
+                        if (label.trim() === "") {
+                            label = _("open file");
+                        }
                     } catch (e) {
                         label = _("open file");
                     }
@@ -3712,17 +3715,15 @@ class Blocks {
                 return;
             }
 
+            const namedBlocks = new Set(["nameddo", "namedcalc", "nameddoArg", "namedcalcArg"]);
+
             /** Update the blocks, do->oldName should be do->newName */
             for (const blk in this.blockList) {
                 if (this.blockList[blk].trash) {
                     continue;
                 }
 
-                if (
-                    ["nameddo", "namedcalc", "nameddoArg", "namedcalcArg"].includes(
-                        this.blockList[blk].name
-                    )
-                ) {
+                if (namedBlocks.has(this.blockList[blk].name)) {
                     const targetBlock = this.blockList[blk];
 
                     let activeName = targetBlock.privateData || targetBlock.overrideName;
@@ -3744,8 +3745,7 @@ class Blocks {
             for (let blockId = 0; blockId < actionsPalette.protoList.length; blockId++) {
                 const block = actionsPalette.protoList[blockId];
                 if (
-                    ["nameddo", "namedcalc", "nameddoArg", "namedcalcArg"].indexOf(block.name) !==
-                        -1 /** && block.defaults[0] !== _('action') */ &&
+                    namedBlocks.has(block.name) /** && block.defaults[0] !== _('action') */ &&
                     block.defaults[0] === oldName
                 ) {
                     block.defaults[0] = newName;

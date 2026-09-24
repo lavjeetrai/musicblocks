@@ -894,11 +894,6 @@ Turtles.TurtlesView = class {
             canvas.style.backgroundColor = this._backgroundColor;
         }
 
-        // Also update body background if available
-        if (typeof document !== "undefined") {
-            document.body.style.backgroundColor = this._backgroundColor;
-        }
-
         const turtlesStage = this.stage;
         // We put the buttons on the stage so they will be on top
 
@@ -911,8 +906,7 @@ Turtles.TurtlesView = class {
             makeKeyboardAccessible(container, object.label || object.name || "Canvas button");
             if (typeof container.addEventListener === "function") {
                 container.addEventListener("keydown", event => {
-                    const isEscape =
-                        event.key === "Escape" || event.key === "Esc" || event.keyCode === 27;
+                    const isEscape = event.key === "Escape" || event.key === "Esc";
                     if (!isEscape) return;
 
                     event.preventDefault();

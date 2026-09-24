@@ -22,7 +22,7 @@
     pitchToFrequency, getNote, isCustomTemperament, getStepSizeUp,
     getStepSizeDown, numberToPitch, pitchToNumber, rationalSum,
     temperamentHasRatios, isEquallyTempered, isNonEDO,
-   noteIsSolfege, getSolfege, SOLFEGENAMES1, SOLFEGECONVERSIONTABLE,
+   noteIsSolfege, getSolfege, SOLFEGENAMES1, NOTENAMES1, SOLFEGECONVERSIONTABLE,
    getInterval, instrumentsEffects, instrumentsFilters, _, DEFAULTVOICE,
    noteToFrequency, getTemperament,
    SEMITONES, normalizeNoteAccidentals, parseNoteString, getCurrentEDO,
@@ -36,7 +36,7 @@
         DEFAULTVOLUME, TARGETBPM, TONEBPM
     js/utils/musicutils.js
         frequencyToPitch, pitchToFrequency, getNote, isCustomTemperament, getStepSizeUp, getStepSizeDown,
-        numberToPitch, pitchToNumber, noteIsSolfege, getSolfege, SOLFEGENAMES1,
+        numberToPitch, pitchToNumber, noteIsSolfege, getSolfege, SOLFEGENAMES1, NOTENAMES1,
         SOLFEGECONVERSIONTABLE, getInterval, noteToFrequency, getTemperament,
         getCurrentEDO, isEquallyTempered
     js/utils/utils.js
@@ -62,6 +62,13 @@ const getCachedPitchToFrequency = (pitch, octave, cents, keySignature, temperame
     return pitchToFrequencyCache.get(cacheKey);
 };
 
+const getNotationPitch = (note, octave, resolvedNote, resolvedOctave, transformed) => {
+    if (transformed) return [resolvedNote, resolvedOctave];
+
+    const solfegeIndex = SOLFEGENAMES1.indexOf(note);
+    return [solfegeIndex === -1 ? note : NOTENAMES1[solfegeIndex], octave];
+};
+
 /**
  * Gets the number of pitch intervals per octave for the current temperament.
  * Defaults to 12 (standard Western tuning) if temperament is not found.
@@ -83,15 +90,9 @@ const getOctaveInterval = activity => {
  * Class pertaining to music related actions for each turtle.
  *
  * @class
- * @classdesc This is the prototype of the Singer for each Turtle component. It is responsible
- * for the music related actions of the Turtle, including playing them while using utility functions
- * in utils/musicutils.js.
- *
- * @todo move music related states from logo.js to here eventually.
- * As of now, the state variables are completely present in logo.js. To ensure modularity and
- * independence of components, Logo should contain members only related to execution of blocks while
- * the logic of execution of blocks should be present in respective files in blocks/ directory,
- * which should eventually use members of this file and turtle-painter.js to proceed.
+ * @classdesc This is the prototype of the Singer for each Turtle component. It owns the
+ * per-turtle music state and actions, including playing music with utility functions in
+ * utils/musicutils.js.
  *
  * Private methods' names begin with underscore '_".
  * Unused methods' names begin with double underscore '__'.
@@ -393,7 +394,6 @@ class Singer {
                           );
                 // getStepSizeUp returns EDO-step counts off 12-EDO; normalize to
                 // a semitone offset (isAlreadyEdoSteps=false) so getNote remaps it.
-                // ponytail: linear 12/modeEdo rescale, per-ratio lookup if cents drift matters
                 const stepSemis = (stepCount * 12) / modeEdo;
                 noteObj = getNote(
                     noteObj[0],
@@ -1108,10 +1108,11 @@ class Singer {
                     }
                 }
 
+                const pitchTransform = atrans + tur.singer.register * getOctaveInterval(activity);
                 noteObj = getNote(
                     anote,
                     octave,
-                    atrans + tur.singer.register * getOctaveInterval(activity),
+                    pitchTransform,
                     tur.singer.keySignature,
                     tur.singer.movable,
                     direction,
@@ -1153,8 +1154,15 @@ class Singer {
                     tur.singer.pitchDrumTable[noteObj[0] + noteObj[1]] = drumname;
                 }
 
-                tur.singer.notePitches[last(tur.singer.inNoteBlock)].push(noteObj[0]);
-                tur.singer.noteOctaves[last(tur.singer.inNoteBlock)].push(noteObj[1]);
+                const notationPitch = getNotationPitch(
+                    anote,
+                    octave,
+                    noteObj[0],
+                    noteObj[1],
+                    !activity.logo.runningMxml || pitchTransform !== 0 || ratio !== 1
+                );
+                tur.singer.notePitches[last(tur.singer.inNoteBlock)].push(notationPitch[0]);
+                tur.singer.noteOctaves[last(tur.singer.inNoteBlock)].push(notationPitch[1]);
                 tur.singer.noteCents[last(tur.singer.inNoteBlock)].push(cents);
                 tur.singer.noteHertz[last(tur.singer.inNoteBlock)].push(
                     cents === 0
@@ -1356,10 +1364,12 @@ class Singer {
                 // Apply transpositions
                 const transposition = 2 * delta + tur.singer.transposition;
 
+                const pitchTransform =
+                    transposition + tur.singer.register * getOctaveInterval(activity);
                 const noteObj = getNote(
                     note,
                     octave,
-                    transposition + tur.singer.register * getOctaveInterval(activity),
+                    pitchTransform,
                     tur.singer.keySignature,
                     tur.singer.movable,
                     direction,
@@ -1372,8 +1382,15 @@ class Singer {
                     tur.singer.pitchDrumTable[noteObj[0] + noteObj[1]] = drumname;
                 }
 
-                tur.singer.notePitches[last(tur.singer.inNoteBlock)].push(noteObj[0]);
-                tur.singer.noteOctaves[last(tur.singer.inNoteBlock)].push(noteObj[1]);
+                const notationPitch = getNotationPitch(
+                    note,
+                    octave,
+                    noteObj[0],
+                    noteObj[1],
+                    !activity.logo.runningMxml || pitchTransform !== 0
+                );
+                tur.singer.notePitches[last(tur.singer.inNoteBlock)].push(notationPitch[0]);
+                tur.singer.noteOctaves[last(tur.singer.inNoteBlock)].push(notationPitch[1]);
                 tur.singer.noteCents[last(tur.singer.inNoteBlock)].push(cents);
                 tur.singer.noteHertz[last(tur.singer.inNoteBlock)].push(
                     cents === 0
@@ -2222,6 +2239,14 @@ class Singer {
                             }
                         }
 
+                        const notationNote =
+                            activity.logo.runningMxml &&
+                            note !== "R" &&
+                            tur.singer.noteCents[thisBlk][i] === 0
+                                ? tur.singer.notePitches[thisBlk][i] +
+                                  tur.singer.noteOctaves[thisBlk][i]
+                                : note;
+
                         if (note !== "R") {
                             // Apply harmonic here instead of in synth.
                             const p = partials.indexOf(1);
@@ -2239,13 +2264,6 @@ class Singer {
                             }
 
                             notes.push(note);
-                            console.log(
-                                i +
-                                    "]=" +
-                                    note +
-                                    " temperament=" +
-                                    activity.logo.synth.inTemperament
-                            );
                         }
 
                         if (duration > 0) {
@@ -2257,8 +2275,8 @@ class Singer {
 
                             if (tur.singer.justCounting.length === 0) {
                                 if (tur.singer.noteDrums[thisBlk].length > 0) {
-                                    if (!chordNotes.includes(note)) {
-                                        chordNotes.push(note);
+                                    if (!chordNotes.includes(notationNote)) {
+                                        chordNotes.push(notationNote);
                                     }
 
                                     if (!chordDrums.includes(tur.singer.noteDrums[thisBlk][0])) {
@@ -2266,12 +2284,12 @@ class Singer {
                                     }
                                 } else {
                                     if (courtesy[i]) {
-                                        if (!chordNotes.includes(note + "♮")) {
-                                            chordNotes.push(note + "♮");
+                                        if (!chordNotes.includes(notationNote + "♮")) {
+                                            chordNotes.push(notationNote + "♮");
                                         }
                                     } else {
-                                        if (!chordNotes.includes(note)) {
-                                            chordNotes.push(note);
+                                        if (!chordNotes.includes(notationNote)) {
+                                            chordNotes.push(notationNote);
                                         }
                                     }
                                 }
@@ -2279,12 +2297,12 @@ class Singer {
                         } else if (tur.singer.tieCarryOver > 0) {
                             if (tur.singer.justCounting.length === 0) {
                                 if (courtesy[i]) {
-                                    if (!chordNotes.includes(note)) {
-                                        chordNotes.push(note);
+                                    if (!chordNotes.includes(notationNote)) {
+                                        chordNotes.push(notationNote);
                                     }
                                 } else {
-                                    if (!chordNotes.includes(note)) {
-                                        chordNotes.push(note);
+                                    if (!chordNotes.includes(notationNote)) {
+                                        chordNotes.push(notationNote);
                                     }
                                 }
                             }

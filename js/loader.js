@@ -77,6 +77,12 @@ requirejs.config({
         "p5-sound-adapter": {
             deps: ["p5.sound.min"]
         },
+        "utils/plugin-utils": {
+            exports: "PluginUtils"
+        },
+        "utils/macro-utils": {
+            exports: "MacroUtils"
+        },
         "utils/utils-logic": {
             exports: "UtilsLogic"
         },
@@ -95,7 +101,9 @@ requirejs.config({
                 "utils/utils-logic",
                 "utils/dom-helpers",
                 "utils/browser-utils",
-                "utils/http-utils"
+                "utils/http-utils",
+                "utils/plugin-utils",
+                "utils/macro-utils"
             ],
             exports: "_"
         },
@@ -248,21 +256,28 @@ requirejs.config({
             deps: ["utils/utils", "utils/dom-helpers", "activity/focus-cycle-manager"],
             exports: "ToolbarUI"
         },
+        "widgets/widgetWindows": {
+            deps: ["utils/utils", "utils/dom-helpers"],
+            exports: "widgetWindows"
+        },
+        "widgets/help": {
+            deps: ["utils/utils", "utils/dom-helpers", "widgets/widgetWindows"],
+            exports: "HelpWidget"
+        },
         // The chat widgets read createWidgetLifecycle off window, so the helper
         // must be evaluated before they are. These are plain scripts, which
         // RequireJS would otherwise fetch and evaluate in any order.
         "utils/ai-widget-lifecycle": {
             exports: "createWidgetLifecycle"
         },
+        "utils/tuningformats": {
+            exports: "TuningFormats"
+        },
         "widgets/reflection": {
             deps: ["utils/ai-widget-lifecycle"]
         },
         "widgets/aidebugger": {
             deps: ["utils/ai-widget-lifecycle"]
-        },
-        "widgets/widgetWindows": {
-            deps: ["utils/dom-helpers"],
-            exports: "widgetWindows"
         }
     },
     paths: {
@@ -598,8 +613,11 @@ requirejs(["i18next", "i18nextHttpBackend"], function (i18next, i18nextHttpBacke
                 "easeljs.min",
                 "tweenjs.min",
                 "utils/platformstyle",
+                "utils/dom-helpers",
                 "utils/utils",
                 "utils/camera-utils",
+                "utils/plugin-utils",
+                "utils/macro-utils",
                 "activity/pubsub",
                 "activity/turtledefs",
                 "activity/block",

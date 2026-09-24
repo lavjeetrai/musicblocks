@@ -187,6 +187,7 @@ class ToolbarUI {
                 ["zhCN", "中文", "innerHTML"],
                 ["th", "ภาษาไทย", "innerHTML"],
                 ["tr", "Türkçe", "innerHTML"],
+                ["az", "azərbaycanca", "innerHTML"],
                 ["ayc", "aymara", "innerHTML"],
                 ["quz", "quechua", "innerHTML"],
                 ["gug", "guarani", "innerHTML"],
@@ -316,6 +317,7 @@ class ToolbarUI {
                 ["zhCN", "中文", "innerHTML"],
                 ["th", "ภาษาไทย", "innerHTML"],
                 ["tr", "Türkçe", "innerHTML"],
+                ["az", "azərbaycanca", "innerHTML"],
                 ["ayc", "aymara", "innerHTML"],
                 ["quz", "quechua", "innerHTML"],
                 ["gug", "guarani", "innerHTML"],
@@ -381,11 +383,19 @@ class ToolbarUI {
         const advancedMode = docById("advancedMode");
         if (this.activity.beginnerMode) {
             // || mode === "null") {
-            advancedMode.style.display = "block";
-            beginnerMode.style.display = "none";
+            if (advancedMode) {
+                advancedMode.style.display = "block";
+            }
+            if (beginnerMode) {
+                beginnerMode.style.display = "none";
+            }
         } else {
-            advancedMode.style.display = "none";
-            beginnerMode.style.display = "block";
+            if (advancedMode) {
+                advancedMode.style.display = "none";
+            }
+            if (beginnerMode) {
+                beginnerMode.style.display = "block";
+            }
         }
 
         for (let i = 0; i < strings.length; i++) {
@@ -416,17 +426,10 @@ class ToolbarUI {
             });
         }
 
-        // Hide the tooltip node directly. Materialize has no "close" command:
-        // it recognises only "remove", and anything else falls through to a
-        // full re-initialisation that rebuilds the tooltip with the plugin
-        // defaults, discarding the delay set just above. Setting visibility is
-        // what Materialize's own mouseleave handler does, and it leaves the
-        // element's configuration and its cached tooltip node untouched.
+        // Materialize has no "close" command. Its mouseleave handler cancels
+        // a pending show and hides an active tooltip without resetting options.
         $j(".tooltipped").on("click", function () {
-            const tooltipId = this.getAttribute("data-tooltip-id");
-            if (tooltipId) {
-                $j("#" + tooltipId).css("visibility", "hidden");
-            }
+            $j(this).trigger("mouseleave.tooltip");
         });
 
         const restoreWidgetFocus = () => {
@@ -1095,7 +1098,12 @@ class ToolbarUI {
     updateRecordButton(rec_onclick) {
         const Record = docById("record");
         const RecordDropdownArrow = docById("recordDropdownArrow");
-        const browser = fnBrowserDetect();
+        const browser =
+            typeof fnBrowserDetect === "function"
+                ? fnBrowserDetect()
+                : typeof window !== "undefined" && typeof window.fnBrowserDetect === "function"
+                  ? window.fnBrowserDetect()
+                  : "unknown";
         const hideIn = ["firefox", "safari"];
 
         this._cleanupRecordDropdownListeners();
@@ -1708,6 +1716,7 @@ class ToolbarUI {
             "te",
             "ibo",
             "tr",
+            "az",
             "ar",
             "bn",
             "ur",

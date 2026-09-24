@@ -13,7 +13,7 @@
    global
 
    _, last, DRUMNAMES, NOISENAMES, VOICENAMES, INVALIDPITCH,
-   CUSTOMSAMPLES, globalActivity
+   CUSTOMSAMPLES, globalActivity, isUnsafeObjectKey
  */
 
 const _b64Cache = new Map();
@@ -49,7 +49,7 @@ const _b64Cache = new Map();
    getVoiceIcon, getVoiceSynthName, getTemperamentKeys,
    getTemperamentName, getStepSizeUp, getStepSizeDown, getModeLength,
    nthDegreeToPitch, getInterval, _parse_pitch_string, calcNoteValueToDisplay,
-   durationToNoteValue, noteToFrequency, getSolfege, splitScaleDegree,
+   durationToNoteValue, noteToFrequency, computeTargetPitchFrequency, getSolfege, splitScaleDegree,
    getNumNote, calcOctave, calcOctaveInterval, isInt,
    convertFromSolfege, getPitchInfo, i18nSolfege,
    convertFactor, getReverseDrumMidi, getOctaveRatio, setOctaveRatio, getTemperamentsList,
@@ -945,7 +945,7 @@ const DEGREES = _("1st 2nd 3rd 4th 5th 6th 7th 8th 9th 10th 11th 12th");
  */
 const getCurrentEDO = temperament => {
     if (!temperament) return 12;
-    const t = TEMPERAMENT[temperament];
+    const t = getTemperament(temperament);
     return t && t.pitchNumber ? t.pitchNumber : 12;
 };
 
@@ -3021,7 +3021,19 @@ const getTemperamentsList = () => {
  * @returns {Object} The interval ratios for the specified temperament.
  */
 const getTemperament = entry => {
-    return TEMPERAMENT[entry];
+    if (TEMPERAMENT[entry]) {
+        return TEMPERAMENT[entry];
+    }
+    if (typeof entry === "string") {
+        const edoMatch = entry.match(/^(\d+)-?[eE][dD][oO]$/i);
+        if (edoMatch) {
+            const key = edoMatch[1] === "12" ? "equal" : "equal" + edoMatch[1];
+            if (TEMPERAMENT[key]) {
+                return TEMPERAMENT[key];
+            }
+        }
+    }
+    return undefined;
 };
 
 /**
@@ -3074,6 +3086,7 @@ const deleteTemperamentFromList = oldEntry => {
  * @returns {void}
  */
 const addTemperamentToDictionary = (entryName, entryValue) => {
+    if (isUnsafeObjectKey(entryName)) return;
     TEMPERAMENT[entryName] = entryValue;
 };
 
@@ -4566,7 +4579,7 @@ const pitchToNumber = (pitch, octave, keySignature, temperament) => {
             } else if (lastOne === DOUBLEFLAT) {
                 pitch = pitch.substring(0, 1);
                 transposition -= 2;
-            } else if (lastTwo === "*" || lastTwo === DOUBLESHARP) {
+            } else if (lastTwo === "##" || lastTwo === "*" || lastTwo === DOUBLESHARP) {
                 pitch = pitch.substring(0, 1);
                 transposition += 2;
             } else if (
@@ -4588,6 +4601,9 @@ const pitchToNumber = (pitch, octave, keySignature, temperament) => {
             } else if (lastOne === "#" || lastOne === SHARP) {
                 pitch = pitch.slice(0, len - 1);
                 transposition += 1;
+            } else if (lastOne === "x" || lastOne === "*") {
+                pitch = pitch.slice(0, len - 1);
+                transposition += 2;
             }
         }
     }
@@ -5217,7 +5233,9 @@ const GetNotesForInterval = tur => {
         const octavea = parseInt(noteStatus[0][0].replace(/[^0-9]/g, ""), 10);
         const octaveb = parseInt(noteStatus[0][1].replace(/[^0-9]/g, ""), 10);
         octave = octaveb - octavea;
-    } else if (notePitches) {
+    } else if (notePitches && notePitches[last(tur.singer.inNoteBlock)]?.length) {
+        // Outside a note block there is no pitch list to read from, so keep
+        // the C to C default instead of indexing into undefined.
         const pitchBlk = notePitches[last(tur.singer.inNoteBlock)];
         firstNote = pitchBlk[0];
         secondNote = pitchBlk[pitchBlk.length - 1];
@@ -5595,9 +5613,6 @@ function getNote(
         let kOffset = 0;
         if (movable) {
             kOffset = PITCHES.indexOf(keySignature.split(" ")[0]);
-            if (kOffset === -1) {
-                kOffset = PITCHES.indexOf(keySignature.split(" ")[0]);
-            }
             if (kOffset === -1) {
                 kOffset = PITCHES2.indexOf(keySignature.split(" ")[0]);
             }
@@ -7424,6 +7439,40 @@ const noteToFrequency = (note, keySignature, temperament) => {
 };
 
 /**
+ * Compute the equal-temperament frequency of a target pitch string used by
+ * the sampler tuner.
+ *
+ * Accepts notes in the form `<letter><accidental?><octave>` where the
+ * accidental is one of `#`, `b`, `##`, `bb`, `♯`, `♭`, `𝄪`, `𝄫`, `x`, or `*`,
+ * and the octave is a (signed) integer. Examples: `"C4"`, `"Bb4"`,
+ * `"C##5"`, `"D𝄫3"`.
+ *
+ * @function
+ * @param {string} noteWithOctave - The target pitch including its octave.
+ * @param {string} [temperament="equal"] - The temperament to use.
+ * @returns {number} Frequency in Hz, or `NaN` if the input cannot be parsed.
+ */
+const computeTargetPitchFrequency = (noteWithOctave, temperament) => {
+    if (typeof noteWithOctave !== "string" || noteWithOctave.length < 2) {
+        return NaN;
+    }
+    const match = noteWithOctave.match(
+        /^((?:[a-g]|do|re|mi|fa|sol|la|ti|si|ut|sa|ga|ma|pa|dha|ni)(?:##|bb|[#b♯♭𝄪𝄫x*♮])?)(-?\d+)$/iu
+    );
+    if (!match) {
+        return NaN;
+    }
+    const pitch = match[1].replace(/♮/gu, "");
+    const octave = parseInt(match[2], 10);
+    const freq = pitchToFrequency(pitch, octave, 0, "C major", temperament || "equal");
+    return typeof freq === "number" && isFinite(freq) && freq > 0 ? freq : NaN;
+};
+
+if (typeof window !== "undefined") {
+    window.computeTargetPitchFrequency = computeTargetPitchFrequency;
+}
+
+/**
  * Check if a note string is in solfege.
  * @function
  * @param {string} note - The note string.
@@ -8078,6 +8127,7 @@ if (typeof module !== "undefined" && module.exports) {
         convertFactor,
         getPitchInfo,
         noteToFrequency,
+        computeTargetPitchFrequency,
         normalizeNoteAccidentals,
         TEMPERAMENT,
         INTERVAL_CENTS,
@@ -8128,6 +8178,7 @@ if (typeof module !== "undefined" && module.exports) {
         getCurrentEDO,
         noteToObj,
         frequencyToPitch,
+        stripMicrotonalPrefix,
         getArticulation,
         keySignatureToMode,
         getScaleAndHalfSteps,

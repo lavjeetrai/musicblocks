@@ -39,10 +39,10 @@ try {
    setupHelpController,
    setupBlockScaleController,
    setupContextMenuController,
-   setupActivityAbcParser, setupActivityIdleWatcher,
+   setupActivityAbcParser, setupActivityIdleWatcher, SessionStorageManager,
    COLLAPSEBLOCKSBUTTON, COLLAPSEBUTTON, createDefaultStack,
    createHelpContent, createjs, DATAOBJS, DEFAULTBLOCKSCALE,
-   DEFAULTDELAY, define, doBrowserCheck, doBrowserCheck, docByClass,
+   DEFAULTDELAY, define, doBrowserCheck, docByClass,
    doSVG, EMPTYHEAPERRORMSG, EXPANDBUTTON, FILLCOLORS,
    getMacroExpansion, getOctaveRatio, getTemperament, transcribeMidi,
    GOHOMEBUTTON, GOHOMEFADEDBUTTON, GRAND, HelpWidget, HIDEBLOCKSFADEDBUTTON,
@@ -62,7 +62,7 @@ try {
    MUSICALMODES, getSavedCustomModes, waitForReadiness, i18next, wheelnav, slicePath,
    base64Encode, disableHorizScrollIcon, toFraction, CARTESIANBUTTON,
    SELECTBUTTON, CLEARBUTTON, piemenuGrid, Midi, ABCJS, ensureABCJS,
-   extractProjectDataFromHTML,unescapeHTML, pubsub, normalizeLanguageCode
+   extractProjectDataFromHTML,unescapeHTML, pubsub, normalizeLanguageCode, announceToScreenReader
  */
 
 /*
@@ -102,9 +102,13 @@ let MYDEFINES = [
     // on demand when the widget is opened, saving ~3-5 MB of heap memory.
     // "Chart",
     "utils/utils-logic",
+    "utils/dom-helpers",
+    "utils/browser-utils",
     "utils/http-utils",
     "utils/utils",
     "utils/camera-utils",
+    "utils/plugin-utils",
+    "utils/macro-utils",
     "utils/retryWithBackoff",
     "utils/error-handler",
     "utils/debugLog",
@@ -158,6 +162,7 @@ let MYDEFINES = [
     "utils/musicutils",
     "utils/synthutils",
     "utils/mathutils",
+    "utils/tuningformats",
     "activity/pastebox",
     "prefixfree.min",
     "Tone",
@@ -460,6 +465,9 @@ class Activity {
             ErrorHandler.recoverable(e, { operation: "loadKeySignatureEnv" });
         }
 
+        this.sessionStorageManager =
+            typeof SessionStorageManager !== "undefined" ? new SessionStorageManager() : null;
+
         setupActivityIdleWatcher(this);
         setupProjectManager(this);
         setupKeyboardController(this);
@@ -612,6 +620,8 @@ class Activity {
                         this.selectionController.isDragging || this.selectionController.isSelecting;
 
                     if (this.stageDirty || hasActiveTweens || hasActiveGifs || isInteracting) {
+                        let frameErrored = false;
+                        this.stageDirty = false;
                         try {
                             // Recompute culling when container moved.
                             if (
@@ -631,11 +641,27 @@ class Activity {
                             // with no frame queued, and _startRenderLoop() refuses to
                             // restart on that flag, so the canvas stopped repainting for
                             // the rest of the session. Report the frame and keep going.
+                            frameErrored = true;
+                            this.stageDirty = true;
                             console.error("Music Blocks: render frame failed", err);
-                        } finally {
-                            this.stageDirty = false;
-                            // Continue the loop if there's work or ongoing interaction
+                        }
+
+                        // On error: always keep the loop alive (prevents canvas freeze).
+                        // On success: continue only if there is still outstanding work.
+                        // Clearing stageDirty before stage.update() catches the edge case
+                        // where stage.update() itself synchronously re-dirtied the stage.
+                        if (
+                            frameErrored ||
+                            this.stageDirty ||
+                            hasActiveTweens ||
+                            hasActiveGifs ||
+                            isInteracting
+                        ) {
                             this._renderLoopRafId = requestAnimationFrame(renderLoop);
+                        } else {
+                            // Nothing to render — let the loop go idle
+                            this._renderLoopRunning = false;
+                            this._renderLoopRafId = null;
                         }
                     } else {
                         // Nothing to render — let the loop go idle
@@ -887,16 +913,13 @@ class Activity {
             this.toolbarController.runFast(env, currentDelay);
 
             // Keep DOM queries, colors, and block visibilities in activity.js
-            const widgetTitle = document.getElementsByClassName("wftTitle");
-            for (let i = 0; i < widgetTitle.length; i++) {
-                if (widgetTitle[i].innerHTML === "tempo") {
-                    if (this.logo.tempo.isMoving) {
-                        this.logo.tempo.pause();
-                    }
-
-                    this.logo.tempo.resume();
-                    break;
+            const tempoTitle = document.getElementById("tempoWidgetID");
+            if (tempoTitle) {
+                if (this.logo.tempo.isMoving) {
+                    this.logo.tempo.pause();
                 }
+
+                this.logo.tempo.resume();
             }
 
             if (!this.turtles.running()) {
@@ -989,13 +1012,10 @@ class Activity {
 
             this.toolbar.resetStop();
 
-            const widgetTitle = document.getElementsByClassName("wftTitle");
-            for (let i = 0; i < widgetTitle.length; i++) {
-                if (widgetTitle[i].innerHTML === "tempo") {
-                    if (this.logo.tempo.isMoving) {
-                        this.logo.tempo.pause();
-                    }
-                    break;
+            const tempoTitle = document.getElementById("tempoWidgetID");
+            if (tempoTitle) {
+                if (this.logo.tempo.isMoving) {
+                    this.logo.tempo.pause();
                 }
             }
         };
@@ -2185,7 +2205,7 @@ class Activity {
                 recordBtn.classList.remove("grey-text", "inactiveLink");
             }
             // Announce program stop to screen readers
-            this.textMsg && this.textMsg(_("Program stopped."));
+            announceToScreenReader(_("Program stopped."));
             // TODO: plugin support
         };
 
@@ -2205,7 +2225,7 @@ class Activity {
 
             // TODO: plugin support
             // Announce program start to screen readers
-            this.textMsg && this.textMsg(_("Program running."));
+            announceToScreenReader(_("Program running."));
         };
 
         /*
@@ -2563,6 +2583,70 @@ class Activity {
             );
         };
 
+        this._handleBeforeUnload = () => {
+            // Save synchronously to SESSION* keys so manual reload/F5
+            // still has recoverable data even if async saves are cut short.
+            if (typeof this.__saveLocally === "function") {
+                this.__saveLocally();
+            }
+            if (typeof this.saveLocally === "function" && this.saveLocally !== this.__saveLocally) {
+                this.saveLocally();
+            }
+            this._stopRenderLoop();
+            if (typeof this._stopAutoSave === "function") {
+                this._stopAutoSave();
+            }
+        };
+
+        this.saveSessionAsync = async () => {
+            // First, trigger __saveLocally for the image thumb and fallback.
+            // If the payload is huge, it will quota exceed but fail silently, which is fine!
+            if (typeof this.__saveLocally === "function") {
+                this.__saveLocally();
+            }
+            // Second, save the massive payload safely to IndexedDB.
+            if (this.sessionStorageManager) {
+                const data = this.prepareExport();
+                let p = "My Project";
+                try {
+                    p = (this.storage && this.storage.currentProject) || "My Project";
+                } catch (e) {
+                    p = "My Project";
+                }
+
+                // We use the same timestamp that __saveLocally just wrote,
+                // or generate a new one if it failed or was invalid.
+                let timestampStr = null;
+                try {
+                    timestampStr = this.storage ? this.storage["SESSION_TIMESTAMP" + p] : null;
+                } catch (e) {
+                    timestampStr = null;
+                }
+                let parsedTimestamp = timestampStr ? parseInt(timestampStr, 10) : NaN;
+                let isValidTimestamp = Number.isFinite(parsedTimestamp) && parsedTimestamp > 0;
+                let timestamp = isValidTimestamp ? parsedTimestamp : Date.now();
+
+                try {
+                    await this.sessionStorageManager.saveSession("SESSION" + p, data, timestamp);
+                    if (!isValidTimestamp) {
+                        try {
+                            if (this.storage) {
+                                this.storage["SESSION_TIMESTAMP" + p] = timestamp.toString();
+                            }
+                        } catch (storageErr) {
+                            console.warn(
+                                "Failed to write session timestamp to localStorage:",
+                                storageErr
+                            );
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to save session to IndexedDB:", e);
+                    throw e;
+                }
+            }
+        };
+
         this.__saveLocally = (...args) => this.projectManager.saveLocally(...args);
 
         // 2D drag-selection and multi-selection are owned by
@@ -2654,23 +2738,7 @@ class Activity {
             // Use managed addEventListener for automatic cleanup
             this.addEventListener(document, "mousemove", this.handleMouseMove);
             this.addEventListener(document, "click", this.handleDocumentClick);
-            this.addEventListener(window, "beforeunload", () => {
-                // Save synchronously to SESSION* keys so manual reload/F5
-                // still has recoverable data even if async saves are cut short.
-                if (typeof this.__saveLocally === "function") {
-                    this.__saveLocally();
-                }
-                if (
-                    typeof this.saveLocally === "function" &&
-                    this.saveLocally !== this.__saveLocally
-                ) {
-                    this.saveLocally();
-                }
-                this._stopRenderLoop();
-                if (typeof this._stopAutoSave === "function") {
-                    this._stopAutoSave();
-                }
-            });
+            this.addEventListener(window, "beforeunload", this._handleBeforeUnload);
 
             this._createMsgContainer(
                 "#ffffff",

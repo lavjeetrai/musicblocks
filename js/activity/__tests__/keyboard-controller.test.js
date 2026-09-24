@@ -69,7 +69,7 @@ beforeEach(() => {
 // Activity mock
 // ---------------------------------------------------------------------------
 
-const makeActivity = () => ({
+const makeActivity = (overrides = {}) => ({
     keyboardEnableFlag: true,
     currentKeyCode: 0,
     currentKey: "",
@@ -125,7 +125,8 @@ const makeActivity = () => ({
     _doFastButton: jest.fn(),
     _doHardStopButton: jest.fn(),
     _saveHelpBlocks: jest.fn(),
-    workspaceLayoutController: { _findBlocks: jest.fn() }
+    workspaceLayoutController: { _findBlocks: jest.fn() },
+    ...overrides
 });
 
 const makeEvent = (overrides = {}) => ({
@@ -133,6 +134,7 @@ const makeEvent = (overrides = {}) => ({
     key: "",
     altKey: false,
     ctrlKey: false,
+    metaKey: false,
     shiftKey: false,
     preventDefault: jest.fn(),
     stopPropagation: jest.fn(),
@@ -502,6 +504,18 @@ describe("KeyboardController", () => {
             activity.blocks.undoAction = jest.fn();
             const controller = createController(activity);
             const event = makeEvent({ keyCode: 90, ctrlKey: true });
+
+            controller.__keyPressed(event);
+
+            expect(event.preventDefault).toHaveBeenCalled();
+            expect(activity.blocks.undoAction).toHaveBeenCalled();
+        });
+
+        it("Cmd+Z triggers undoAction on macOS", () => {
+            const activity = makeActivity();
+            activity.blocks.undoAction = jest.fn();
+            const controller = createController(activity);
+            const event = makeEvent({ keyCode: 90, metaKey: true });
 
             controller.__keyPressed(event);
 

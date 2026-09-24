@@ -92,6 +92,10 @@ class Queue {
     }
 }
 
+/**
+ * @classdesc Logo owns global execution, scheduling, widget and session context, notation and
+ * export, synth and transport, camera and shared resources, and orchestration state.
+ */
 class Logo {
     /**
      * @constructor
@@ -1699,9 +1703,11 @@ class Logo {
         this.firstNoteTime = null;
         this.firstNoteAudioTime = null;
 
-        // Ensure we have at least one turtle.
-        if (this.turtles.getTurtleCount() === 0) {
-            this.turtles.add(null);
+        // Ensure we have at least one turtle that is not in the trash. This
+        // has to happen before prepSynths() and initTurtle() below, or a
+        // turtle added here gets no synth and no notation state.
+        if (this.turtles.turtleCount() === 0) {
+            this.turtles.addTurtle(null);
         }
 
         this.deps.Singer.masterBPM = TARGETBPM;
@@ -1855,11 +1861,6 @@ class Logo {
         }
 
         this.onRunTurtle();
-
-        // Make sure that there is atleast one turtle.
-        if (this.turtles.turtleCount() === 0) {
-            this.turtles.addTurtle(null);
-        }
 
         // Mark all turtles as not running.
         for (const turtle in this.turtles.turtleList) {
@@ -2263,7 +2264,14 @@ class Logo {
             }
         }
 
-        if (!currentBlock.isArgBlock()) {
+        // Value blocks that are not styled as arg blocks (note counter,
+        // calculate, make block) define arg() but no flow(). Clicking one on
+        // its own should show its value like any other value block.
+        const returnsValue =
+            currentBlock.isArgBlock() ||
+            (!(currentBlock.name in logo.evalFlowDict) && typeof proto.flow !== "function");
+
+        if (!returnsValue) {
             let res = null;
             // Is it a plugin?
             if (currentBlock.name in logo.evalFlowDict) {

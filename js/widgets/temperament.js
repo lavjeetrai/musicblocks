@@ -24,7 +24,8 @@
    getOctaveRatio, getTemperament, getTemperamentKeys, getTemperamentRatio,
    isCustomTemperament, last, normalizeNoteAccidentals, parseNoteString, pitchToFrequency, platformColor,
    PREVIEWVOLUME, ratioToWheelAngle, rationalToFraction, setOctaveRatio, SHARP, Singer,
-   slicePath, updateTemperaments, wheelnav, frequencyToPitch, clampNumber
+   slicePath, updateTemperaments, wheelnav, frequencyToPitch, clampNumber,
+   ManagedTimer
  */
 
 /* exported TemperamentWidget, deviationColor, deviationFrom12EDO, largestGapMid */
@@ -126,6 +127,36 @@ function TemperamentWidget() {
      */
     this.inTemperament = null;
     this._playTimeout = null;
+    if (typeof ManagedTimer !== "undefined") {
+        this._timerManager = new ManagedTimer();
+    } else if (typeof require !== "undefined") {
+        try {
+            const ManagedTimerCtor = require("../utils/ManagedTimer");
+            this._timerManager = new ManagedTimerCtor();
+        } catch (e) {
+            this._timerManager = null;
+        }
+    } else {
+        this._timerManager = null;
+    }
+
+    this._setWidgetTimeout = function (callback, delay) {
+        if (this._timerManager !== null) {
+            return this._timerManager.setTimeout(callback, delay);
+        }
+        return setTimeout(callback, delay);
+    };
+
+    this._clearWidgetTimeout = function (id) {
+        if (id === null || id === undefined) {
+            return false;
+        }
+        if (this._timerManager !== null) {
+            return this._timerManager.clearTimeout(id);
+        }
+        clearTimeout(id);
+        return true;
+    };
 
     /**
      * Last triggered event.
@@ -495,47 +526,48 @@ function TemperamentWidget() {
         that._playAllRunning = false;
         const _playAll = function () {
             if (that._playAllRunning) {
-                clearTimeout(that._playAllTimer);
+                that._clearWidgetTimeout(that._playAllTimer);
+                that._playAllTimer = null;
                 that._playAllRunning = false;
                 flashDot = -1;
                 _drawCircle();
+                _updateRemoveButton();
                 return;
             }
+            if (that._vizMenu) _removeMenu();
+            dragIndex = -1;
+            lockedDrag = false;
+            highlightDot = -1;
+            _highlightTableRow(-1);
             that._playAllRunning = true;
+            _updateRemoveButton();
+            // Play up the scale, the octave exactly once, then back down.
+            // frequencies[] may or may not carry an octave entry at
+            // pitchNumber, so only iterate the pitches within the octave
+            // and synthesize the octave explicitly. The octave sits at the
+            // same position on the circle as the tonic, so highlight dot 0.
+            const n = Math.min(that.pitchNumber, that.frequencies.length);
+            const sequence = [];
+            for (let k = 0; k < n; k++) sequence.push([k]);
+            sequence.push([0, Number(that.frequencies[0]) * that.powerBase]);
+            for (let k = n - 1; k >= 0; k--) sequence.push([k]);
             let i = 0;
-            let forward = true;
-            let octaveWrap = false;
             const step = function () {
                 if (!that._playAllRunning) {
                     flashDot = -1;
                     _drawCircle();
                     return;
                 }
-                // Guard: only play valid indices
-                if (octaveWrap) {
-                    _playNote(0, that.frequencies[0] * that.powerBase);
-                    octaveWrap = false;
-                    forward = false;
-                    i = that.frequencies.length;
-                } else if (i >= 0 && i < that.frequencies.length) {
-                    _playNote(i);
-                }
-                // Advance
-                if (forward) {
-                    i++;
-                    if (i >= that.frequencies.length) {
-                        octaveWrap = true;
-                    }
-                } else {
-                    i--;
-                    if (i < 0) {
-                        that._playAllRunning = false;
-                        setTimeout(function () {
-                            flashDot = -1;
-                            _drawCircle();
-                        }, 200);
-                        return;
-                    }
+                _playNote(sequence[i][0], sequence[i][1]);
+                i++;
+                if (i >= sequence.length) {
+                    that._playAllRunning = false;
+                    _updateRemoveButton();
+                    that._setWidgetTimeout(function () {
+                        flashDot = -1;
+                        _drawCircle();
+                    }, 200);
+                    return;
                 }
                 // Pace the run by the project tempo factor (matches the
                 // Singer.defaultBPMFactor pattern used for note durations).
@@ -543,7 +575,7 @@ function TemperamentWidget() {
                     typeof Singer !== "undefined" && Singer.defaultBPMFactor
                         ? 300 * Singer.defaultBPMFactor
                         : 300;
-                that._playAllTimer = setTimeout(step, gap);
+                that._playAllTimer = that._setWidgetTimeout(step, gap);
             };
             step();
         };
@@ -551,6 +583,7 @@ function TemperamentWidget() {
         that._playAll = _playAll;
 
         const _addPitch = function (dir) {
+            if (that._playAllRunning) return;
             const base = that.cents.slice(0, that.pitchNumber);
             const nGaps = base.length;
             const s = highlightDot >= 0 && highlightDot < that.cents.length ? highlightDot : -1;
@@ -586,11 +619,22 @@ function TemperamentWidget() {
         const _updateRemoveButton = () => {
             if (!that._vizToolbar) return;
             const btn = that._vizToolbar.removePitchBtn;
-            if (!btn || !btn.style) return;
-            const locked = highlightDot >= 0 && _isLocked(highlightDot);
-            btn.style.opacity = locked ? "0.4" : "1";
-            btn.style.pointerEvents = locked ? "none" : "auto";
-            btn.style.cursor = locked ? "not-allowed" : "pointer";
+            if (btn && btn.style) {
+                const locked =
+                    that._playAllRunning || (highlightDot >= 0 && _isLocked(highlightDot));
+                btn.style.opacity = locked ? "0.4" : "1";
+                btn.style.pointerEvents = locked ? "none" : "auto";
+                btn.style.cursor = locked ? "not-allowed" : "pointer";
+            }
+            const addAfter = that._vizToolbar.addPitchAfterBtn;
+            const addBefore = that._vizToolbar.addPitchBeforeBtn;
+            for (const addBtn of [addAfter, addBefore]) {
+                if (addBtn && addBtn.style) {
+                    addBtn.style.opacity = that._playAllRunning ? "0.4" : "1";
+                    addBtn.style.pointerEvents = that._playAllRunning ? "none" : "auto";
+                    addBtn.style.cursor = that._playAllRunning ? "not-allowed" : "pointer";
+                }
+            }
         };
 
         // ── Canvas ──
@@ -670,6 +714,7 @@ function TemperamentWidget() {
         };
 
         canvas.onkeydown = function (e) {
+            if (that._playAllRunning) return;
             if (e.key === "ArrowRight" || e.key === "ArrowDown") {
                 e.preventDefault();
                 focusedDot = (focusedDot + 1) % that.pitchNumber;
@@ -750,7 +795,7 @@ function TemperamentWidget() {
                 ctx.fillStyle = color;
                 ctx.fill();
 
-                if (i === highlightDot || i === flashDot) {
+                if (i === flashDot || (!that._playAllRunning && i === highlightDot)) {
                     ctx.beginPath();
                     ctx.arc(dx, dy, dotR + 7, 0, 2 * Math.PI);
                     ctx.strokeStyle = "#ffeb3b";
@@ -849,7 +894,7 @@ function TemperamentWidget() {
             td.style.cursor = _isLocked(i) ? "default" : "text";
             td.ondblclick = ev => {
                 ev.stopPropagation();
-                if (_isLocked(i)) return;
+                if (_isLocked(i) || that._playAllRunning) return;
                 const prev = getPrev(i);
                 const next = getNext(i);
                 const cur = getCur(i);
@@ -872,6 +917,10 @@ function TemperamentWidget() {
                 input.focus();
                 input.select();
                 const commit = () => {
+                    if (that._playAllRunning) {
+                        _updateTableRow(i);
+                        return;
+                    }
                     let v = parseFloat(input.value);
                     if (isNaN(v)) {
                         _updateTableRow(i);
@@ -955,6 +1004,7 @@ function TemperamentWidget() {
                             : bgColor;
                 };
                 tr.onclick = function () {
+                    if (that._playAllRunning) return;
                     highlightDot = i;
                     _drawCircle();
                     _highlightTableRow(i);
@@ -1122,7 +1172,7 @@ function TemperamentWidget() {
         };
 
         const _removePitch = function (index) {
-            if (that.pitchNumber <= 1) return;
+            if (that._playAllRunning || that.pitchNumber <= 1) return;
             if (index < 0 || index >= that.pitchNumber) return;
             if (_isLocked(index)) return;
             that.cents.splice(index, 1);
@@ -1150,7 +1200,7 @@ function TemperamentWidget() {
             );
             flashDot = index;
             _drawCircle();
-            setTimeout(function () {
+            that._setWidgetTimeout(function () {
                 flashDot = -1;
                 _drawCircle();
             }, 200);
@@ -1307,6 +1357,7 @@ function TemperamentWidget() {
         };
 
         const _showMenu = function (e, index) {
+            if (that._playAllRunning) return;
             e.preventDefault();
             _removeMenu();
             const menu = document.createElement("div");
@@ -1413,7 +1464,7 @@ function TemperamentWidget() {
         };
 
         canvas.onmousedown = function (e) {
-            if (e.button !== 0) return;
+            if (that._playAllRunning || e.button !== 0) return;
             const [x, y] = _canvasCoords(e, canvas);
             const hit = _findNearest(x, y, dotR + 8);
             if (hit !== null) {
@@ -1436,6 +1487,10 @@ function TemperamentWidget() {
         };
 
         canvas.onmousemove = function (e) {
+            if (that._playAllRunning) {
+                canvas.style.cursor = "default";
+                return;
+            }
             const [x, y] = _canvasCoords(e, canvas);
             if (dragIndex >= 0 && !lockedDrag) {
                 dragMoved = true;
@@ -1453,6 +1508,7 @@ function TemperamentWidget() {
         canvas.onmouseup = _endDrag;
 
         canvas.ontouchstart = function (e) {
+            if (that._playAllRunning) return;
             const [x, y] = _canvasCoords(e.touches[0], canvas);
             const hit = _findNearest(x, y, dotR + 16);
             if (hit !== null) {
@@ -1540,7 +1596,8 @@ function TemperamentWidget() {
      */
     this.edit = function () {
         if (this._playAllRunning) {
-            clearTimeout(this._playAllTimer);
+            this._clearWidgetTimeout(this._playAllTimer);
+            this._playAllTimer = null;
             this._playAllRunning = false;
         }
         this._lastPlaybackIndex = 0;
@@ -2867,7 +2924,7 @@ function TemperamentWidget() {
 
         widgetWindow.onclose = function () {
             if (that._playAllTimer) {
-                clearTimeout(that._playAllTimer);
+                that._clearWidgetTimeout(that._playAllTimer);
                 that._playAllTimer = null;
             }
             that._playAllRunning = false;
@@ -2880,8 +2937,11 @@ function TemperamentWidget() {
                 that._vizMenuClose = null;
             }
             if (that._playTimeout) {
-                clearTimeout(that._playTimeout);
+                that._clearWidgetTimeout(that._playTimeout);
                 that._playTimeout = null;
+            }
+            if (that._timerManager !== null) {
+                that._timerManager.clearAll();
             }
             that._logo.synth.stop();
             that._logo.synth.setMasterVolume(last(Singer.masterVolume));
