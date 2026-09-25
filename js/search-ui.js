@@ -467,8 +467,8 @@ class SearchUI {
      * @returns {{ closeButton: HTMLElement, modeButton: HTMLElement|null }}
      */
     buildHelpfulSearchDiv() {
-        if (document.getElementById("helpfulSearchDiv")) {
-            const existing = document.getElementById("helpfulSearchDiv");
+        const existing = document.getElementById("helpfulSearchDiv");
+        if (existing) {
             existing.parentNode.removeChild(existing);
         }
         this.helpfulSearchDiv = document.createElement("div");
