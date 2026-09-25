@@ -13,7 +13,7 @@ const _paletteIconCache = new Map();
 
 /* global
    docById, LEADING, DEFAULTPALETTE, MULTIPALETTES, platformColor,
-   PALETTEICONS, MULTIPALETTEICONS, SKIPPALETTES, toTitleCase,
+   PALETTEICONS, MULTIPALETTEICONS, MULTIPALETTENAMES, SKIPPALETTES, toTitleCase,
    i18nSolfege, NUMBERBLOCKDEFAULT, TEXTWIDTH, STRINGLEN,
    DEFAULTBLOCKSCALE, SVG, DISABLEDFILLCOLOR, DISABLEDSTROKECOLOR,
    PALETTEFILLCOLORS, PALETTESTROKECOLORS, last, getTextWidth,
@@ -667,7 +667,9 @@ class Palettes {
             const table1 = document.createElement("table");
             table1.setAttribute("width", 1.5 * this.cellSize);
             table1.setAttribute("bgcolor", "white");
+            table1.setAttribute("role", "presentation");
             const thead1 = document.createElement("thead");
+            thead1.setAttribute("role", "presentation");
             const tr1 = document.createElement("tr");
             tr1.setAttribute("role", "tablist");
             tr1.setAttribute("aria-label", _("Palette Categories"));
@@ -690,7 +692,6 @@ class Palettes {
             containerDiv.appendChild(table2);
 
             element.appendChild(containerDiv);
-
             element.childNodes[0].style.border = `1px solid ${platformColor.selectorSelected}`;
 
             document.body.appendChild(element);
@@ -761,7 +762,8 @@ class Palettes {
         td.style.position = "relative";
         td.style.backgroundColor = platformColor.paletteBackground;
         td.setAttribute("role", "tab");
-        td.setAttribute("aria-label", _(MULTIPALETTES[i]));
+        td.setAttribute("aria-label", MULTIPALETTENAMES[i]);
+        td.setAttribute("aria-selected", i === 0 ? "true" : "false");
         td.tabIndex = i === 0 ? 0 : -1; // Make only the first tab focusable by default
 
         td.appendChild(
@@ -825,6 +827,7 @@ class Palettes {
                 );
                 tr.children[j].children[1].style.background = platformColor.paletteLabelBackground;
             }
+            tr.children[j].setAttribute("aria-selected", j === i ? "true" : "false");
             tr.children[j].children[0].src = img.src;
         }
     }
@@ -1584,12 +1587,19 @@ class Palette {
         palBody.id = "PaletteBody";
         const palBodyHeight = window.innerHeight - this.palettes.top - this.palettes.cellSize - 26;
 
-        // palBody.innerHTML = `<thead></thead><tbody style = "display: block; height: ${palBodyHeight}px; overflow: auto; overflow-x: hidden;" id="PaletteBody_items" class="PalScrol"></tbody>`;
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
+        tbody.id = "PaletteBody_items";
+        tbody.className = "PalScrol";
+        tbody.style.display = "block";
+        tbody.style.width = "100%";
+        tbody.style.height = "auto";
+        tbody.style.maxHeight = `${palBodyHeight}px`;
+        tbody.style.overflow = "auto";
+        tbody.style.overflowX = "hidden";
 
-        palBody.insertAdjacentHTML(
-            "afterbegin",
-            `<thead></thead><tbody style = "display: block;   width: 100% ; height:auto ; max-height: ${palBodyHeight}px;  overflow: auto; overflow-x: hidden;" id="PaletteBody_items" class="PalScrol"></tbody>`
-        );
+        palBody.appendChild(thead);
+        palBody.appendChild(tbody);
 
         palBody.style.minWidth = "180px";
         palBody.style.background = platformColor.paletteBackground;
