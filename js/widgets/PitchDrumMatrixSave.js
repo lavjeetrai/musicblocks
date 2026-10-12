@@ -108,6 +108,8 @@ class PitchDrumMatrixSave {
         let notenameidx;
         let octaveidx;
         let hiddenidx;
+        drumRow = drumTable.rows[0];
+        const drumImgs = Array.from(drumRow.cells).map(cell => cell.querySelector("img"));
         for (let i = 0; i < pairs.length; i++) {
             row = pairs[i][0];
             col = pairs[i][1];
@@ -116,8 +118,7 @@ class PitchDrumMatrixSave {
             const noteArg = cellRow.cells[0].dataset.noteArg;
             octave = parseInt(cellRow.cells[0].dataset.octave, 10);
 
-            drumRow = drumTable.rows[0];
-            const drumImg = drumRow.cells[col].querySelector("img");
+            const drumImg = drumImgs[col];
             drumName = getDrumSynthName(drumImg ? drumImg.title : "");
 
             noteObj = getNote(

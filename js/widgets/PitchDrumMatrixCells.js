@@ -54,6 +54,8 @@ class PitchDrumMatrixCells {
         let drumRow;
         let drumCell;
         let cell;
+        drumRow = drumTable.rows[0];
+        const drumCells = Array.from(drumRow.cells);
         for (let i = 0; i < pdmTable.rows.length - 1; i++) {
             table = this._pdmCellTables[i];
             cellRow = table.rows[0];
@@ -61,9 +63,7 @@ class PitchDrumMatrixCells {
             for (let j = 0; j < cellRow.cells.length; j++) {
                 cell = cellRow.cells[j];
 
-                drumRow = drumTable.rows[0];
-
-                drumCell = drumRow.cells[j];
+                drumCell = drumCells[j];
 
                 cell.onclick = e => {
                     const currCell = e.target;
