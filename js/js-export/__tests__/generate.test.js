@@ -165,17 +165,12 @@ describe("JSGenerate Class", () => {
         ASTUtils.getMouseAST.mockReturnValue({ type: "Mouse" });
         astring.generate.mockReturnValue("generated code");
 
-        JSGenerate.run(true, true);
+        JSGenerate.run(true);
 
         expect(console.log).toHaveBeenCalledWith(
             "\n   %c STACK TREES ",
             "background: greenyellow; color: midnightblue; font-weight: bold"
         );
-        expect(console.log).toHaveBeenCalledWith(
-            "\n   %c CODE ",
-            "background: greenyellow; color: midnightblue; font-weight: bold"
-        );
-        expect(console.log).toHaveBeenCalledWith("generated code");
     });
 
     describe("generateCode edge cases", () => {
@@ -241,33 +236,20 @@ describe("JSGenerate Class", () => {
             astring.generate.mockReturnValue("code");
         });
 
-        test("should run without printing when both options false", () => {
-            JSGenerate.run(false, false);
+        test("should run without printing when printStacksTree is false", () => {
+            JSGenerate.run(false);
 
             expect(console.log).not.toHaveBeenCalledWith(
                 expect.stringContaining("STACK TREES"),
                 expect.any(String)
             );
-            expect(console.log).not.toHaveBeenCalledWith(
-                expect.stringContaining("CODE"),
-                expect.any(String)
-            );
         });
 
         test("should print only stacks when printStacksTree is true", () => {
-            JSGenerate.run(true, false);
+            JSGenerate.run(true);
 
             expect(console.log).toHaveBeenCalledWith(
                 "\n   %c STACK TREES ",
-                "background: greenyellow; color: midnightblue; font-weight: bold"
-            );
-        });
-
-        test("should print only code when printCode is true", () => {
-            JSGenerate.run(false, true);
-
-            expect(console.log).toHaveBeenCalledWith(
-                "\n   %c CODE ",
                 "background: greenyellow; color: midnightblue; font-weight: bold"
             );
         });
@@ -338,25 +320,6 @@ describe("JSGenerate Class", () => {
         JSGenerate.printStacksTree();
 
         expect(console.log).toHaveBeenCalledTimes(4);
-    });
-
-    test("should run without printing separator when printCode is false", () => {
-        globalActivity.blocks.stackList = [];
-        globalActivity.blocks.blockList = {};
-        ASTUtils.getMethodAST.mockReturnValue({ type: "Method" });
-        ASTUtils.getMouseAST.mockReturnValue({ type: "Mouse" });
-        astring.generate.mockReturnValue("code");
-
-        JSGenerate.run(true, false);
-
-        expect(console.log).not.toHaveBeenCalledWith(
-            "%c _______________________________________",
-            "color: darkorange"
-        );
-        expect(console.log).not.toHaveBeenCalledWith(
-            "\n   %c CODE ",
-            "background: greenyellow; color: midnightblue; font-weight: bold"
-        );
     });
 
     test("should generate stack trees with various block types and arguments", () => {

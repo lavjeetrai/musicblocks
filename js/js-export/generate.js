@@ -379,10 +379,9 @@ class JSGenerate {
      * @static
      * @param {Object} activity - the Activity object
      * @param {Boolean} printStacksTree - whether to print the stacks tree in the browser console
-     * @param {Boolean} printCode - whether to print the generated code in the browser console
      * @returns {void}
      */
-    static run(printStacksTree, printCode) {
+    static run(printStacksTree) {
         JSGenerate.generateStacksTree();
         if (printStacksTree) {
             console.log(
@@ -393,18 +392,6 @@ class JSGenerate {
         }
 
         JSGenerate.generateCode();
-
-        if (printStacksTree & printCode) {
-            console.log("%c _______________________________________", "color: darkorange");
-        }
-
-        if (printCode) {
-            console.log(
-                "\n   " + "%c CODE ",
-                "background: greenyellow; color: midnightblue; font-weight: bold"
-            );
-            console.log(JSGenerate.code);
-        }
     }
 }
 if (typeof module !== "undefined" && module.exports) {

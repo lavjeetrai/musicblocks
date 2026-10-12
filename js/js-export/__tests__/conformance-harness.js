@@ -258,7 +258,7 @@ function loadBlockListIntoActivity(blockList, activity) {
  */
 function exportBlocksToJS(blockList) {
     loadBlockListIntoActivity(blockList);
-    JSGenerate.run(false, false);
+    JSGenerate.run(false);
     if (JSGenerate.generateFailed) {
         throw new Error("JSGenerate failed to export block program to JavaScript");
     }
