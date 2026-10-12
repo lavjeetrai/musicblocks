@@ -122,7 +122,6 @@ class ToolbarUI {
     init(activity) {
         this.activity = activity;
         let strings;
-        let strings_;
         if (_THIS_IS_MUSIC_BLOCKS_) {
             strings = [
                 ["mb-logo", _("About Music Blocks")],
@@ -137,12 +136,15 @@ class ToolbarUI {
                 ["load", _("Load project from file")],
                 ["saveButton", _("Save project")],
                 ["saveButtonAdvanced", _("Save project as HTML")],
-                ["planetIcon", _("Find and share projects")],
-                ["planetIconDisabled", _("Offline. Sharing is unavailable")],
+                ["planetIcon", _("Git Planet")],
+                ["planetIconDisabled", _("Offline. Git Planet is unavailable")],
+                ["gitProjectBtn", _("My Project")],
                 ["toggleAuxBtn", _("Auxiliary menu")],
                 ["helpIcon", _("Help and shortcuts")],
                 ["helpGuideItem", _("Help"), true],
                 ["shortcutsGuideItem", _("Keyboard shortcuts"), true],
+                ["practiceLessonsItem", _("Practice levels"), true],
+                ["explorerJournalItem", _("Explorer Journal"), true],
                 ["runSlowlyIcon", _("Run slowly")],
                 ["runStepByStepIcon", _("Run step by step")],
                 ["displayStatsIcon", _("Display statistics")],
@@ -200,65 +202,6 @@ class ToolbarUI {
                 ["he", "עִברִית", true],
                 ["ur", "اردو", true]
             ];
-
-            // Workaround for FF
-            strings_ = [
-                _("About Music Blocks"),
-                _("Play"),
-                _("Stop"),
-                _("Record"),
-                _("Record options"),
-                _("Enter Fullscreen"),
-                _("Enter Fullscreen"),
-                _("Toggle Fullscreen"),
-                _("New project"),
-                _("Load project from file"),
-                _("Save project"),
-                _("Save project"),
-                _("Find and share projects"),
-                _("Offline. Sharing is unavailable"),
-                _("Auxiliary menu"),
-                _("Help and shortcuts"),
-                _("Help"),
-                _("Keyboard shortcuts"),
-                _("Run slowly"),
-                _("Run step by step"),
-                _("Display statistics"),
-                _("Load plugin"),
-                _("Delete plugin"),
-                _("Enable horizontal scrolling"),
-                _("Disable horizontal scrolling"),
-                _("Change theme"),
-                _("Light Mode"),
-                _("Dark Mode"),
-                _("High-contrast Mode"),
-                _("Merge with current project"),
-                _("Set Pitch Preview"),
-                _("JavaScript Editor"),
-                _("Restore"),
-                _("Switch to beginner mode"),
-                _("Switch to advanced mode"),
-                _("Select language"),
-                _("Save project as HTML"),
-                _("Save project as MIDI"),
-                _("Save mouse artwork as SVG"),
-                _("Save mouse artwork as PNG"),
-                _("Save music as WAV"),
-                _("Save sheet music as ABC"),
-                _("Save sheet music as Lilypond"),
-                _("Save block artwork as SVG"),
-                _("Save block artwork as PNG"),
-                _("Confirm"),
-                _("Select language"),
-                _("Save project as HTML"),
-                _("Save turtle artwork as PNG"),
-                _("Save project as HTML"),
-                _("Save turtle artwork as SVG"),
-                _("Save turtle artwork as PNG"),
-                _("Save block artwork as SVG"),
-                _("Save block artwork as PNG"),
-                _("Confirm")
-            ];
         } else {
             strings = [
                 ["mb-logo", _("About Turtle Blocks")],
@@ -273,12 +216,15 @@ class ToolbarUI {
                 ["load", _("Load project from file")],
                 ["saveButton", _("Save project")],
                 ["saveButtonAdvanced", _("Save project as HTML")],
-                ["planetIcon", _("Find and share projects")],
-                ["planetIconDisabled", _("Offline. Sharing is unavailable")],
+                ["planetIcon", _("Git Planet")],
+                ["planetIconDisabled", _("Offline. Git Planet is unavailable")],
+                ["gitProjectBtn", _("My Project")],
                 ["toggleAuxBtn", _("Auxiliary menu")],
                 ["helpIcon", _("Help and shortcuts")],
                 ["helpGuideItem", _("Help"), true],
                 ["shortcutsGuideItem", _("Keyboard shortcuts"), true],
+                ["practiceLessonsItem", _("Practice levels"), true],
+                ["explorerJournalItem", _("Explorer Journal"), true],
                 ["runSlowlyIcon", _("Run slowly")],
                 ["runStepByStepIcon", _("Run step by step")],
                 ["displayStatsIcon", _("Display statistics")],
@@ -303,6 +249,9 @@ class ToolbarUI {
                 ["save-png", _("Save turtle artwork as PNG"), true],
                 ["save-blockartwork-svg", _("Save block artwork as SVG"), true],
                 ["save-blockartwork-png", _("Save block artwork as PNG"), true],
+                ["git-create", _("Track my project"), true],
+                ["git-commit", _("Mark this moment"), true],
+                ["git-history", _("Time travel"), true],
                 ["new-project", _("Confirm"), true],
                 ["enUS", "English (United States)", true],
                 ["enUK", "English (United Kingdom)", true],
@@ -330,53 +279,6 @@ class ToolbarUI {
                 ["he", "עִברִית", true],
                 ["ur", "اردو", true]
             ];
-
-            // Workaround for FF
-            strings_ = [
-                _("About Turtle Blocks"),
-                _("Play"),
-                _("Stop"),
-                _("Record"),
-                _("Record options"),
-                _("Enter Fullscreen"),
-                _("Enter Fullscreen"),
-                _("Toggle Fullscreen"),
-                _("New project"),
-                _("Load project from file"),
-                _("Save project"),
-                _("Save project as HTML"),
-                _("Find and share projects"),
-                _("Offline. Sharing is unavailable"),
-                _("Auxiliary menu"),
-                _("Help and shortcuts"),
-                _("Help"),
-                _("Keyboard shortcuts"),
-                _("Run slowly"),
-                _("Run step by step"),
-                _("Display statistics"),
-                _("Load plugin"),
-                _("Delete plugin"),
-                _("Enable horizontal scrolling"),
-                _("Disable horizontal scrolling"),
-                _("Change theme"),
-                _("Light Mode"),
-                _("Dark Mode"),
-                _("High-contrast Mode"),
-                _("Merge with current project"),
-                _("JavaScript Editor"),
-                _("Restore"),
-                _("Switch to beginner mode"),
-                _("Switch to advanced mode"),
-                _("Select language"),
-                _("Save project as HTML"),
-                _("Save turtle artwork as PNG"),
-                _("Save project as HTML"),
-                _("Save turtle artwork as SVG"),
-                _("Save turtle artwork as PNG"),
-                _("Save block artwork as SVG"),
-                _("Save block artwork as PNG"),
-                _("Confirm")
-            ];
         }
 
         const beginnerMode = docById("beginnerMode");
@@ -400,7 +302,7 @@ class ToolbarUI {
 
         for (let i = 0; i < strings.length; i++) {
             const obj = strings[i];
-            const trans = strings_[i];
+            const trans = obj[1];
             const elem = docById(obj[0]);
             if (strings[i][2]) {
                 if (elem !== undefined && elem !== null) {
@@ -847,6 +749,7 @@ class ToolbarUI {
             };
         });
 
+        updateThemeOptions();
         icon.onclick = updateThemeOptions;
     }
 
@@ -1269,8 +1172,10 @@ class ToolbarUI {
      */
     renderMenuIcon(onclick) {
         const menuIcon = docById("menu");
+        const toggleAuxBtn = docById("toggleAuxBtn");
         const auxToolbar = docById("aux-toolbar");
-        menuIcon.onclick = () => {
+
+        toggleAuxBtn.onclick = () => {
             const searchBar = docById("search");
             searchBar.classList.toggle("open");
             if (auxToolbar.style.display === "" || auxToolbar.style.display === "none") {
@@ -1317,7 +1222,13 @@ class ToolbarUI {
         const helpIcon = docById("helpIcon");
         const helpGuideItem = docById("helpGuideItem");
         const shortcutsGuideItem = docById("shortcutsGuideItem");
-        const hasDropdownMenu = !!helpGuideItem || !!shortcutsGuideItem;
+        const practiceLessonsItem = docById("practiceLessonsItem");
+        const explorerJournalItem = docById("explorerJournalItem");
+        const hasDropdownMenu =
+            !!helpGuideItem ||
+            !!shortcutsGuideItem ||
+            !!practiceLessonsItem ||
+            !!explorerJournalItem;
 
         if (helpGuideItem) {
             helpGuideItem.onclick = event => {
@@ -1338,6 +1249,41 @@ class ToolbarUI {
                 if (shortcutsOnclick) {
                     shortcutsOnclick(this.activity);
                 }
+            };
+        }
+
+        if (practiceLessonsItem) {
+            practiceLessonsItem.onclick = event => {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                if (typeof window.startPracticeMode === "function") {
+                    window.startPracticeMode();
+                }
+            };
+        }
+
+        if (explorerJournalItem) {
+            explorerJournalItem.onclick = event => {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                if (typeof window.openExplorerJournal === "function") {
+                    window.openExplorerJournal();
+                }
+            };
+        }
+
+        const gitTutorialItem = docById("gitTutorialItem");
+        if (gitTutorialItem && typeof GitTutorial !== "undefined") {
+            gitTutorialItem.onclick = event => {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                GitTutorial.open(this.activity);
             };
         }
 
@@ -1849,17 +1795,16 @@ class ToolbarUI {
         const getNavigableButtons = () => {
             // Main toolbar button selectors
             const mainSelectors =
-                "#play, #stop, #record, #recordDropdownArrow, #FullScreen, #newFile, #load, " +
-                "#saveButton, #saveButtonAdvanced, #planetIcon, #toggleAuxBtn, #helpIcon, " +
-                "#installButton";
+                "#play, #stop, #record, #recordDropdownArrow, #gitProjectBtn, #newFile, #load, " +
+                "#saveButton, #saveButtonAdvanced, #planetIcon, #FullScreen, #helpIcon, " +
+                "#installButton, #toggleAuxBtn";
 
-            // Aux toolbar button selectors
+            // Aux toolbar button selectors (Option A: Playback & Inspection, Workspace & Tools, Preferences & Modes)
             const auxSelectors =
-                "#runSlowlyIcon, #runStepByStepIcon, #displayStatsIcon, " +
-                "#loadPluginIcon, #delPluginIcon, #enableHorizScrollIcon, " +
-                "#disableHorizScrollIcon, #themeSelectIcon, #mergeWithCurrentIcon, " +
-                "#wrapTurtle, #chooseKeyIcon, #toggleJavaScriptIcon, #restoreIcon, " +
-                "#beginnerMode, #advancedMode, #languageSelectIcon";
+                "#runSlowlyIcon, #runStepByStepIcon, #displayStatsIcon, #toggleJavaScriptIcon, " +
+                "#wrapTurtle, #enableHorizScrollIcon, #disableHorizScrollIcon, #restoreIcon, " +
+                "#chooseKeyIcon, #mergeWithCurrentIcon, #loadPluginIcon, #delPluginIcon, " +
+                "#beginnerMode, #advancedMode, #themeSelectIcon, #languageSelectIcon";
 
             const isVisible = btn => {
                 const style = window.getComputedStyle(btn);
@@ -2481,6 +2426,29 @@ class ToolbarUI {
             if (btn) btn.style.color = color;
             this._dimTimeout = null;
         }, 500);
+    }
+
+    /**
+     * Renders the "My Project" Git dropdown icon and wires up the Materialize
+     * dropdown trigger. The menu item visibility is managed by GitDropdownUI.
+     *
+     * @public
+     * @param {GitDropdownUI} gitDropdownUI - The GitDropdownUI instance.
+     * @returns {void}
+     */
+    renderGitDropdownIcon(gitDropdownUI) {
+        const btn = docById("gitProjectBtn");
+        if (!btn) return;
+
+        const sync = () => {
+            if (gitDropdownUI && typeof gitDropdownUI._syncMenuState === "function") {
+                gitDropdownUI._syncMenuState();
+            }
+        };
+
+        btn.addEventListener("click", sync);
+        btn.addEventListener("mouseenter", sync);
+        btn.addEventListener("focus", sync);
     }
 }
 

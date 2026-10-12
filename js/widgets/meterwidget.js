@@ -87,14 +87,24 @@ class MeterWidget {
      *
      * @param {object} activity - The activity object.
      * @param {number} widgetBlock - The widget block number.
+     * @param {number} [turtle] - The turtle that ran the Meter widget block.
      */
-    constructor(activity, widgetBlock) {
+    constructor(activity, widgetBlock, turtle) {
         /**
          * The activity object.
          *
          * @type {object}
          */
         this.activity = activity;
+
+        /**
+         * The turtle that ran the Meter widget block, whose tempo the beats are played at. The
+         * turtle itself rather than its index, which shifts when a turtle is removed.
+         *
+         * @type {object|null}
+         * @private
+         */
+        this._turtle = turtle !== undefined ? this.activity.turtles.ithTurtle(turtle) : null;
 
         /**
          * The meter block.
@@ -307,9 +317,10 @@ class MeterWidget {
         input1.style.cssFloat = "left";
         input1.value = v1;
         input1.type = "number";
-        input1.id = "beatValue";
+        input1.id = "beatCount";
         input1.setAttribute("min", "1");
         input1.setAttribute("max", "16");
+        input1.setAttribute("aria-label", _("Number of beats"));
         divInput.appendChild(input1);
 
         const divInput2 = document.createElement("div");
@@ -321,6 +332,7 @@ class MeterWidget {
         input2.id = "beatValue";
         input2.setAttribute("min", "1");
         input2.setAttribute("max", "35");
+        input2.setAttribute("aria-label", _("Beat note value"));
         divInput2.appendChild(input2);
 
         widgetWindow._toolbar.appendChild(divInput);
@@ -340,8 +352,16 @@ class MeterWidget {
             const el = divInput.children[0];
             const el2 = divInput2.children[0];
 
-            divInput.children[0].value = clampNumber(el.value, el.min, el.max);
-            divInput2.children[0].value = clampNumber(el2.value, el2.min, el2.max);
+            divInput.children[0].value = clampNumber(
+                Math.round(Number(el.value)),
+                Number(el.min),
+                Number(el.max)
+            );
+            divInput2.children[0].value = clampNumber(
+                Math.round(Number(el2.value)),
+                Number(el2.min),
+                Number(el2.max)
+            );
 
             const bnBlk = c1 !== null ? this.activity.blocks.blockList[c1] : null;
             const bvBlk = c3 !== null ? this.activity.blocks.blockList[c3] : null;
@@ -513,9 +533,11 @@ class MeterWidget {
      * @returns {void}
      */
     _playBeat() {
-        const tur = this.activity.turtles.ithTurtle(0);
+        // The tempo of the turtle that ran the block, not turtle 0: after a project is loaded,
+        // turtle 0 is a trashed turtle of the old project.
+        const tur = this._turtle;
         const bpmFactor =
-            TONEBPM / (tur.singer.bpm.length > 0 ? last(tur.singer.bpm) : Singer.masterBPM);
+            TONEBPM / (tur && tur.singer.bpm.length > 0 ? last(tur.singer.bpm) : Singer.masterBPM);
         for (let i = 0; i < this._strongBeats.length; i++) {
             this._playWheel.navItems[i].navItem.hide();
         }

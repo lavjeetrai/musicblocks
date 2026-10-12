@@ -430,6 +430,17 @@ describe("Palettes Class", () => {
             expect(typeof pos.x).toBe("number");
             expect(typeof pos.y).toBe("number");
         });
+
+        test("includes toolbar height in search position", () => {
+            mockActivity.toolbarHeight = 53;
+
+            const pos = palettes.getSearchPos();
+
+            expect(pos.y).toBe(
+                (palettes.top + palettes.cellSize * 0.95 + mockActivity.toolbarHeight) *
+                    mockActivity.turtleBlocksScale
+            );
+        });
     });
 
     describe("getPluginMacroExpansion method", () => {
@@ -1574,7 +1585,8 @@ describe("Palettes Class", () => {
 
             palette.showMenu(true);
 
-            expect(paletteItems.style.height).toBe("720px");
+            expect(paletteItems.style.height).toBe("calc(100vh - 180px)");
+            expect(paletteItems.style.maxHeight).toBe("calc(100vh - 180px)");
             expect(paletteItems.style.overflow).toBe("auto");
             expect(paletteItems.style.overflowX).toBe("hidden");
         });

@@ -1121,3 +1121,114 @@ describe("processABCNotes - key signatures", () => {
         });
     });
 });
+
+describe("saveAbcOutput - one K: field per turtle", () => {
+    const note = pitch => [[pitch], 4, 0, null, null, -1, false];
+
+    const build = staging => ({
+        logo: {
+            notationOutput: "",
+            notationNotes: Object.fromEntries(Object.keys(staging).map(t => [t, ""])),
+            notation: { notationStaging: staging }
+        },
+        turtles: { ithTurtle: () => ({ singer: { keySignature: "C major" } }) }
+    });
+
+    it("starts each turtle's K: field on its own line", () => {
+        const result = saveAbcOutput(build({ 0: [note("C4")], 1: [note("D4")] }));
+
+        expect(result.split("\n").filter(line => line.startsWith("K:"))).toHaveLength(2);
+        expect(result).not.toMatch(/\S +K:/);
+    });
+
+    it("does not leave a blank line after an empty turtle", () => {
+        const result = saveAbcOutput(build({ 0: [], 1: [note("D4")] }));
+
+        expect(result.replace(/\n+$/, "")).not.toContain("\n\n");
+    });
+});
+
+describe("saveAbcOutput - one voice per turtle", () => {
+    const note = pitch => [[pitch], 4, 0, null, null, -1, false];
+
+    const build = staging => ({
+        logo: {
+            notationOutput: "",
+            notationNotes: Object.fromEntries(Object.keys(staging).map(t => [t, ""])),
+            notation: { notationStaging: staging }
+        },
+        turtles: { ithTurtle: () => ({ singer: { keySignature: "C major" } }) }
+    });
+
+    it("gives each turtle its own V: field", () => {
+        const result = saveAbcOutput(build({ 0: [note("C4")], 1: [note("D4")] }));
+
+        expect(result.split("\n").filter(line => line.startsWith("V:"))).toEqual(["V:t1", "V:t2"]);
+    });
+
+    it("writes a staged voice change inside the turtle it belongs to", () => {
+        const result = saveAbcOutput(build({ 0: [note("C4")], 1: ["voice one", note("D4")] }));
+
+        // A note block inside a note block stages "voice one". Written as a
+        // bare [V:1] it would move these notes onto the first turtle's staff.
+        expect(result).toContain("[V:t2v1]");
+        expect(result).not.toContain("[V:1]");
+        expect(result.split("\n").filter(line => line.startsWith("V:"))).toEqual(["V:t1", "V:t2"]);
+    });
+
+    it("returns to the turtle's own voice when the nesting ends", () => {
+        const result = saveAbcOutput(
+            build({ 0: [note("C4")], 1: ["voice one", note("D4"), "one voice", note("E4")] })
+        );
+
+        expect(result).toContain("[V:t2v1]");
+        expect(result).toContain("[V:t2]");
+    });
+
+    it("skips a turtle that staged fields but no notes", () => {
+        const result = saveAbcOutput(build({ 0: ["meter", 3, 4], 1: [note("D4")] }));
+
+        expect(result.split("\n").filter(line => line.startsWith("V:"))).toEqual(["V:t1"]);
+    });
+
+    it("starts each V: field on its own line", () => {
+        const result = saveAbcOutput(build({ 0: [note("C4")], 1: [note("D4")] }));
+
+        expect(result).not.toMatch(/\S +V:/);
+    });
+});
+
+describe("saveAbcOutput - forever repeats", () => {
+    const note = pitch => [[pitch], 4, 0, null, null, -1, false];
+
+    const notesOf = staged => {
+        const logo = {
+            notationNotes: { 0: "" },
+            notation: { notationStaging: { 0: staged } }
+        };
+        processABCNotes(logo, "0");
+        return logo.notationNotes[0];
+    };
+
+    it("wraps the notes after a forever in repeat bars", () => {
+        expect(notesOf(["begin repeat", note("G4"), note("E4")])).toBe("|: G4 E4 :|");
+    });
+
+    it("starts the repeat where the forever starts", () => {
+        expect(notesOf([note("C4"), "begin repeat", note("G4")])).toBe("C4 |: G4 :|");
+    });
+
+    it("repeats only the innermost of nested forevers", () => {
+        expect(notesOf(["begin repeat", note("C4"), "begin repeat", note("G4")])).toBe(
+            "C4 |: G4 :|"
+        );
+    });
+
+    it("writes no repeat bars when no notes follow the forever", () => {
+        expect(notesOf([note("C4"), "begin repeat"])).toBe("C4 ");
+    });
+
+    it("writes no repeat bars without a forever", () => {
+        expect(notesOf([note("C4"), note("G4")])).toBe("C4 G4 ");
+    });
+});

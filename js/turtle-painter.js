@@ -84,21 +84,17 @@ class Painter {
         this.turtles = turtle.turtles;
         this.activity = turtle.activity;
 
-        // Things used for what the turtle draws
         this._svgOutput = "";
-        this._svgPath = false; // are we currently drawing a path?
+        this._svgPath = false;
+
+        // Reset control points and close open SVG path if any
+        this.reset();
 
         this._color = DEFAULTCOLOR;
         this._value = DEFAULTVALUE;
         this._chroma = DEFAULTCHROMA;
         this._stroke = DEFAULTSTROKE;
         this._font = DEFAULTFONT;
-
-        // Control points for bezier curves
-        this.cp1x = 0;
-        this.cp1y = 100;
-        this.cp2x = 100;
-        this.cp2y = 100;
 
         // Kept as a Munsell hex string: _processColor() converts it on every
         // stroke, and converting an already-converted rgba string yields black.
@@ -115,6 +111,23 @@ class Painter {
         this._cachedCanvasHeight = 0;
         this._pendingCanvasUpdate = false;
         this._rafId = null;
+    }
+
+    /**
+     * Resets transient bezier control-point state for consecutive runs.
+     * Closes any open SVG path while preserving accumulated SVG output
+     * and persistent pen styling attributes (color, value, chroma, stroke, font).
+     *
+     * @returns {void}
+     */
+    reset() {
+        if (typeof this.closeSVG === "function") {
+            this.closeSVG();
+        }
+        this.cp1x = 0;
+        this.cp1y = 100;
+        this.cp2x = 100;
+        this.cp2y = 100;
     }
 
     // ========= Setters, Getters =============================================
@@ -1528,6 +1541,10 @@ class Painter {
      * @param color - hex code specifying color
      */
     doSetColor(color) {
+        if (!Number.isFinite(Number(color))) {
+            this.turtles.activity.errorMsg(NANERRORMSG);
+            return;
+        }
         this.closeSVG();
         this.color = Number(color);
         const results = getcolor(this.color);
@@ -1545,6 +1562,10 @@ class Painter {
      * @param chroma - chroma hex code
      */
     doSetChroma(chroma) {
+        if (!Number.isFinite(Number(chroma))) {
+            this.turtles.activity.errorMsg(NANERRORMSG);
+            return;
+        }
         this.closeSVG();
         this.chroma = Number(chroma);
         this._canvasColor = getMunsellColor(this.color, this.value, this.chroma);
@@ -1557,6 +1578,10 @@ class Painter {
      * @param shade - shade hex code
      */
     doSetValue(shade) {
+        if (!Number.isFinite(Number(shade))) {
+            this.turtles.activity.errorMsg(NANERRORMSG);
+            return;
+        }
         this.closeSVG();
         this.value = Number(shade);
         this._canvasColor = getMunsellColor(this.color, this.value, this.chroma);
@@ -1569,6 +1594,10 @@ class Painter {
      * @param hue - hue hex code
      */
     doSetHue(hue) {
+        if (!Number.isFinite(Number(hue))) {
+            this.turtles.activity.errorMsg(NANERRORMSG);
+            return;
+        }
         this.closeSVG();
         this.color = Number(hue);
         this._canvasColor = getMunsellColor(this.color, this.value, this.chroma);

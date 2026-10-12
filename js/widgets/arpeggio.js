@@ -389,9 +389,12 @@ class Arpeggio {
                 widgetWindow.getWidgetBody().style.left = "0px";
                 widgetWindow.getWidgetBody().style.height = "400px";
                 widgetWindow.getWidgetBody().style.width = "400px";
-                // const innerDiv = docById("arpeggioInnerDiv");
-                innerDiv.style.height = widgetWindow.getWidgetBody().style.height;
-                innerDiv.style.width = widgetWindow.getWidgetBody().style.width;
+                docById("arpeggioOuterDiv").style.height =
+                    widgetWindow.getWidgetBody().style.height;
+                docById("arpeggioOuterDiv").style.width = widgetWindow.getWidgetBody().style.width;
+                docById("arpeggioInnerDiv").style.height =
+                    widgetWindow.getWidgetBody().style.height;
+                docById("arpeggioInnerDiv").style.width = widgetWindow.getWidgetBody().style.width;
             }
         };
 
@@ -703,7 +706,7 @@ class Arpeggio {
         for (let n = 0; n < notesToPlay.length; n++) {
             const noteValue = notesToPlay[n][1];
             const letter = notesToPlay[n][0].slice(0, -1);
-            const octave = Number(notesToPlay[n][0].substr(notesToPlay[n][0].length - 1));
+            const octave = Number(notesToPlay[n][0].slice(notesToPlay[n][0].length - 1));
             for (let i = 0; i < pairs.length; i++) {
                 if (pairs[i][0] === -1) {
                     this._playList.push(["", noteValue]);

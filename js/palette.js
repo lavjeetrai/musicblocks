@@ -855,7 +855,9 @@ class Palettes {
     getSearchPos() {
         return {
             x: this.cellSize * this.activity.turtleBlocksScale * 1.5,
-            y: (this.top + this.cellSize * 0.95) * this.activity.turtleBlocksScale
+            y:
+                (this.top + this.cellSize * 0.95 + (this.activity.toolbarHeight || 0)) *
+                this.activity.turtleBlocksScale
         };
     }
 
@@ -1311,6 +1313,9 @@ class PaletteModel {
             case "grid":
                 label = _("Grid").toLowerCase();
                 break;
+            case "turtlekey":
+                label = _("pen size");
+                break;
             case "text":
                 label = _("text");
                 break;
@@ -1416,7 +1421,7 @@ class PaletteModel {
             label != null
         ) {
             if (getTextWidth(label, "bold 20pt Sans") > TEXTWIDTH) {
-                label = label.substr(0, STRINGLEN) + "...";
+                label = label.slice(0, STRINGLEN) + "...";
             }
         }
 
@@ -1672,7 +1677,9 @@ class Palette {
             return;
         }
         const paletteItems = docById("PaletteBody_items");
-        paletteItems.style.height = `${window.innerHeight - paletteItems.getBoundingClientRect().top}px`;
+        const height = `calc(100vh - ${paletteItems.getBoundingClientRect().top}px)`;
+        paletteItems.style.height = height;
+        paletteItems.style.maxHeight = height;
 
         // Close palette menu on outside click
         // Remove any existing outside-click listener
@@ -2157,7 +2164,7 @@ class Palette {
                 // Check if a status block already exists
                 for (let blk = 0; blk < this.activity.blocks.blockList.length; blk++) {
                     const block = this.activity.blocks.blockList[blk];
-                    if (block.name === "status" && !block.trash) {
+                    if (block?.name === "status" && !block.trash) {
                         return;
                     }
                 }

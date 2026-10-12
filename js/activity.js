@@ -39,6 +39,7 @@ try {
    setupHelpController,
    setupBlockScaleController,
    setupContextMenuController,
+   requestClear,
    setupActivityAbcParser, setupActivityIdleWatcher, SessionStorageManager,
    COLLAPSEBLOCKSBUTTON, COLLAPSEBUTTON, createDefaultStack,
    createHelpContent, createjs, DATAOBJS, DEFAULTBLOCKSCALE,
@@ -151,6 +152,7 @@ let MYDEFINES = [
     "activity/alert-renderer",
     "palette/palette-loader",
     "activity/search-controller",
+    "activity/clear-confirmation",
     "activity/workspace-layout-controller",
     "activity/trash-controller",
     "activity/help-controller",
@@ -159,6 +161,19 @@ let MYDEFINES = [
     "search-ui",
     "activity/keyboard-controller",
     "widgets/plugin-dialog",
+    "utils/musicutils-constants",
+    "utils/musicutils-i18n",
+    "utils/musicutils-temperament",
+    "utils/musicutils-pitch",
+    "utils/musicutils-lookups",
+    "utils/musicutils-rhythm",
+    "utils/musicutils-solfege",
+    "utils/piemenu",
+    "utils/musicutils-modewheel",
+    "utils/musicutils-modecore",
+    "utils/musicutils-pitchscale",
+    "utils/musicutils-buildscale",
+    "utils/musicutils-pitchinfo",
     "utils/musicutils",
     "utils/synthutils",
     "utils/mathutils",
@@ -740,9 +755,6 @@ class Activity {
         // setupWorkspaceLayoutController() installs the delegation stubs below:
         // findBlocks, setHomeContainers, repositionBlocks, _handleRepositionBlocksOnResize.
 
-        //if any window resize event occurs:
-        this.addEventListener(window, "resize", this._handleRepositionBlocksOnResize);
-
         // Sets up HelpController (js/activity/help-controller.js), which owns the help
         // window, about page, keyboard shortcuts dialog, statistics window,
         // JavaScript editor launch, and the Alt-H save-help-block workflow.
@@ -769,57 +781,6 @@ class Activity {
         /*
          * Clears "canvas"
          */
-        const renderClearConfirmation = clearCanvasAction => {
-            if (document.getElementById("clear-confirm")) return;
-            // Create a custom modal for confirmation
-            const modal = document.createElement("div");
-            modal.classList.add("modalBox");
-            modal.id = "clear-confirm";
-            const title = document.createElement("h2");
-            title.textContent = _("Clear workspace");
-            title.classList.add("modal-title");
-
-            modal.appendChild(title);
-            const message = document.createElement("p");
-            message.textContent = _("Are you sure you want to clear the workspace?");
-            message.classList.add("modal-message");
-            modal.appendChild(message);
-
-            const buttonContainer = document.createElement("div");
-            buttonContainer.classList.add("clear-button-container");
-
-            const confirmBtn = document.createElement("button");
-            confirmBtn.classList.add("confirm-button");
-            confirmBtn.textContent = _("Confirm");
-            confirmBtn.style.border = "none";
-            confirmBtn.style.borderRadius = "4px";
-            confirmBtn.style.padding = "8px 16px";
-            confirmBtn.style.fontWeight = "bold";
-            confirmBtn.style.cursor = "pointer";
-            confirmBtn.style.marginRight = "16px";
-            this.addEventListener(confirmBtn, "click", () => {
-                document.body.removeChild(modal);
-                clearCanvasAction();
-            });
-
-            const cancelBtn = document.createElement("button");
-            cancelBtn.classList.add("cancel-button");
-            cancelBtn.textContent = _("Cancel");
-            cancelBtn.style.border = "none";
-            cancelBtn.style.borderRadius = "4px";
-            cancelBtn.style.padding = "8px 16px";
-            cancelBtn.style.fontWeight = "bold";
-            cancelBtn.style.cursor = "pointer";
-            this.addEventListener(cancelBtn, "click", () => {
-                document.body.removeChild(modal);
-            });
-
-            buttonContainer.appendChild(confirmBtn);
-            buttonContainer.appendChild(cancelBtn);
-            modal.appendChild(buttonContainer);
-            document.body.appendChild(modal);
-        };
-
         this._allClear = (noErase, skipConfirmation = false) => {
             const clearCanvasAction = () => {
                 this.blocks.activeBlock = null;
@@ -877,11 +838,7 @@ class Activity {
                 }
             };
 
-            if (skipConfirmation) {
-                clearCanvasAction();
-            } else {
-                renderClearConfirmation(clearCanvasAction);
-            }
+            requestClear(this, skipConfirmation, clearCanvasAction);
         };
         /**
          * Sets up play button functionality; runs Music Blocks.
@@ -1945,14 +1902,22 @@ class Activity {
         }
 
         let resizeTimeout;
+        let resizeAnimationFrame;
+
         this._handleWindowResize = () => {
+            if (!resizeAnimationFrame) {
+                resizeAnimationFrame = requestAnimationFrame(() => {
+                    this._handleRepositionBlocksOnResize();
+                    resizeAnimationFrame = null;
+                });
+            }
+
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 handleResize();
                 this.setupPaletteMenu();
             }, 200);
         };
-        this.addEventListener(window, "resize", this._handleWindowResize);
         this._handleOrientationChangeResize = handleResize;
         this.addEventListener(window, "orientationchange", this._handleOrientationChangeResize);
 
@@ -2034,7 +1999,7 @@ class Activity {
             // Return to home position after loading new blocks.
             this.blocksContainer.x = 0;
             this.blocksContainer.y = 0;
-            for (const name in this.blocks.palettes.dict) {
+            for (const name of Object.keys(this.blocks.palettes.dict)) {
                 this.palettes.dict[name].hideMenu(true);
             }
 
@@ -2050,9 +2015,10 @@ class Activity {
             // which scans all blocks, so N moves × N blocks = O(N²).
             this.blocks._beginDeferCheckBounds();
 
-            for (const blk in this.blocks.blockList) {
+            for (const blk of Object.keys(this.blocks.blockList)) {
                 const myBlock = this.blocks.blockList[blk];
-                if (!myBlock) continue;
+                // Blocks already in the trash were recorded when they were trashed.
+                if (!myBlock || myBlock.trash) continue;
 
                 // If this block is at the top of a stack, push it
                 // onto the trashStacks list.
@@ -2070,7 +2036,7 @@ class Activity {
                 ) {
                     const turtle = this.blocks.blockList[blk].value;
 
-                    if (!this.blocks.blockList[blk].trash && turtle !== null) {
+                    if (turtle !== null) {
                         const primaryTurtle = this.turtles.getTurtle(turtle);
 
                         primaryTurtle.inTrash = true;
@@ -2088,10 +2054,8 @@ class Activity {
                         }
                     }
                 } else if (myBlock.name === "action") {
-                    if (!myBlock.trash) {
-                        this.blocks.deleteActionBlock(this.blocks.blockList[blk]);
-                        actionBlockCounter += 1;
-                    }
+                    this.blocks.deleteActionBlock(myBlock);
+                    actionBlockCounter += 1;
                 }
 
                 this.blocks.blockList[blk].trash = true;
@@ -2236,7 +2200,7 @@ class Activity {
                 // Skip trashed blocks — they are hidden and their backing
                 // canvases are freed in sendStackToTrash(). Re-caching them
                 // here would waste ~0.5–2 MB per trashed block.
-                if (block.trash) return;
+                if (!block || block.trash) return;
 
                 if (block.container) {
                     block.container.uncache();
@@ -2548,7 +2512,7 @@ class Activity {
                 return;
             }
 
-            for (const name in this.palettes.dict) {
+            for (const name of Object.keys(this.palettes.dict)) {
                 this.palettes.dict[name].hideMenu(true);
             }
 
@@ -2706,6 +2670,7 @@ class Activity {
             const that = this;
 
             this.setupWindowBlurHandler(doHardStopButton);
+            this.setupResizeListeners();
 
             this.stage = new createjs.Stage(this.canvas);
             createjs.Touch.enable(this.stage, false, true);
@@ -2831,7 +2796,15 @@ class Activity {
                 this.save.saveBlockArtworkPNG.bind(this.save)
             );
             this.toolbar.renderPlanetIcon(this.planet, doOpenSamples);
+            // Initialise the Git dropdown ("My Project") after the planet
+            // is ready so activity.prepareExport() is available.
+            if (typeof GitDropdownUI !== "undefined") {
+                this.gitDropdownUI = new GitDropdownUI();
+                this.gitDropdownUI.init(this);
+                this.toolbar.renderGitDropdownIcon(this.gitDropdownUI);
+            }
             this.toolbar.renderMenuIcon(this.showHideAuxMenu);
+
             this.toolbar.renderHelpIcon(this.showHelp, this.showKeyboardShortcuts);
             this.toolbar.renderModeSelectIcon(
                 doSwitchMode,
@@ -2863,6 +2836,17 @@ class Activity {
             }
 
             window.saveLocally = this.saveLocally;
+
+            // Keep the Git dirty-check hash up to date after every local save.
+            if (this.gitDropdownUI) {
+                const _origSaveLocally = this.saveLocally;
+                this.saveLocally = (...args) => {
+                    const result = _origSaveLocally.apply(this, args);
+                    this.gitDropdownUI.onSaveLocally();
+                    return result;
+                };
+                window.saveLocally = this.saveLocally;
+            }
 
             // Auto-save live workspace every 5 minutes to guard against
             // data loss from browser crashes (see issue #2994).
@@ -3065,6 +3049,13 @@ class Activity {
         const end = window.__mbPerf.marks[endMark];
         if (typeof start !== "number" || typeof end !== "number") return;
         window.__mbPerf.measures[measureName] = +(end - start).toFixed(2);
+    }
+
+    /**
+     * Registers window resize listeners after dependency cleanup.
+     */
+    setupResizeListeners() {
+        this.addEventListener(window, "resize", this._handleWindowResize);
     }
 
     /**

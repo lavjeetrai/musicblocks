@@ -351,7 +351,10 @@ class Notation {
      * @returns {void}
      */
     __notationHarmonic(turtle) {
-        this._notationStaging.push("harmonic");
+        if (this._notationStaging[turtle] === undefined) {
+            this._notationStaging[turtle] = [];
+        }
+        this._notationStaging[turtle].push("harmonic");
         this._pickupPoint[turtle] = null;
     }
 
@@ -443,6 +446,20 @@ class Notation {
      */
     notationEndSlur(turtle) {
         this._notationStaging[turtle].push("end slur");
+        this._pickupPoint[turtle] = null;
+    }
+
+    /**
+     * Marks the start of a section that repeats forever. Nothing follows it,
+     * so the repeat runs to the end of the voice. The drum staff is built
+     * from the drum staging, so the marker goes there too.
+     *
+     * @param turtle
+     * @returns {void}
+     */
+    notationBeginRepeat(turtle) {
+        this._notationStaging[turtle].push("begin repeat");
+        this._notationDrumStaging[turtle].push("begin repeat");
         this._pickupPoint[turtle] = null;
     }
 

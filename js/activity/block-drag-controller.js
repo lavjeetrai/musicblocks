@@ -515,7 +515,7 @@ class BlockDragController {
                 if (lockInit) {
                     break;
                 }
-                const title = widgetTitle[x].innerHTML;
+                const title = widgetTitle[x].textContent.trim();
                 if (!widgetWindows.isReinitWidgetTitle(title)) {
                     continue;
                 }
@@ -883,7 +883,7 @@ class BlockDragController {
                                 myBlock.value = name;
                                 let label = name;
                                 if (getTextWidth(label, "bold 20pt Sans") > TEXTWIDTH) {
-                                    label = label.substr(0, STRINGLEN) + "...";
+                                    label = label.slice(0, STRINGLEN) + "...";
                                 }
                                 myBlock.text.text = label;
                                 myBlock.container.updateCache();
@@ -987,7 +987,7 @@ class BlockDragController {
                         continue;
                     }
 
-                    if (blocks.blockList[b].trash) {
+                    if (!blocks.blockList[b] || blocks.blockList[b].trash) {
                         continue;
                     }
 
@@ -1002,7 +1002,7 @@ class BlockDragController {
                                 );
                                 let label = blocks.blockList[thisBlock].value;
                                 if (getTextWidth(label, "bold 20pt Sans") > TEXTWIDTH) {
-                                    label = label.substr(0, STRINGLEN) + "...";
+                                    label = label.slice(0, STRINGLEN) + "...";
                                 }
                                 blocks.blockList[thisBlock].text.text = label;
                                 blocks.blockList[thisBlock].container.updateCache();
@@ -1052,7 +1052,7 @@ class BlockDragController {
                     if (lockInit) {
                         break;
                     }
-                    const title = widgetTitle[i].innerHTML;
+                    const title = widgetTitle[i].textContent.trim();
                     if (!widgetWindows.isReinitWidgetTitle(title)) {
                         continue;
                     }

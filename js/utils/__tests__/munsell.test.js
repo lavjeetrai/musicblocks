@@ -128,9 +128,9 @@ describe("munsell", () => {
         it("should round-trip a hex-formatted candidate too", () => {
             const value = getcolor(0)[2];
             expect(value).toMatch(/^#[0-9a-fA-F]{6}$/);
-            const r = parseInt(value.substr(1, 2), 16);
-            const g = parseInt(value.substr(3, 2), 16);
-            const b = parseInt(value.substr(5, 2), 16);
+            const r = parseInt(value.slice(1, 3), 16);
+            const g = parseInt(value.slice(3, 5), 16);
+            const b = parseInt(value.slice(5, 7), 16);
             expect(searchColors(r, g, b)).toBe(0);
         });
     });
@@ -216,6 +216,23 @@ describe("getMunsellColor edge cases", () => {
     it("should handle hue values above 100", () => {
         const color = getMunsellColor(150, 50, 50);
         expect(color).toBeDefined();
+    });
+
+    it("should return at once for -Infinity and very large negative hues", () => {
+        // These used to loop forever adding 40 to the hue.
+        expect(getMunsellColor(-Infinity, 50, 50)).toBeUndefined();
+        // ...the same as Infinity and NaN, which never looped.
+        expect(getMunsellColor(Infinity, 50, 50)).toBeUndefined();
+        expect(getMunsellColor(NaN, 50, 50)).toBeUndefined();
+        expect(getMunsellColor(-1e20, 50, 50)).toBeDefined();
+        // -1e12 / 2.5 is a whole number of turns of the 40 hues, so it is hue 0.
+        expect(getMunsellColor(-1e12, 50, 50)).toBe(getMunsellColor(0, 50, 50));
+    });
+
+    it("should wrap negative hues to the same colour as before", () => {
+        expect(getMunsellColor(-10, 50, 50)).toBe(getMunsellColor(90, 50, 50));
+        expect(getMunsellColor(-100, 30, 70)).toBe(getMunsellColor(0, 30, 70));
+        expect(getMunsellColor(-2.5, 50, 50)).toBe(getMunsellColor(97.5, 50, 50));
     });
 
     it("should handle mid-range values", () => {
