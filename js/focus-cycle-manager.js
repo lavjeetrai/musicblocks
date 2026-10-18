@@ -32,6 +32,7 @@ class FocusCycleManager {
         this._lastFocusedButton = null; // last toolbar button focused by keyboard
         this._liveRegion = null;
         this._initialized = false; // guards against duplicate listener registration
+        this._domCache = {}; // cache for document.getElementById lookups
 
         // Bind handlers so they can be removed if needed.
         this._onKeyDown = this._onKeyDown.bind(this);
@@ -109,10 +110,18 @@ class FocusCycleManager {
 
     _workspaceElements() {
         return {
-            holder: document.getElementById("canvasHolder"),
-            container: document.getElementById("canvasContainer"),
-            overlay: document.getElementById("canvas"),
-            canvas: document.getElementById("myCanvas")
+            holder:
+                this._domCache.holder ||
+                (this._domCache.holder = document.getElementById("canvasHolder")),
+            container:
+                this._domCache.container ||
+                (this._domCache.container = document.getElementById("canvasContainer")),
+            overlay:
+                this._domCache.overlay ||
+                (this._domCache.overlay = document.getElementById("canvas")),
+            canvas:
+                this._domCache.canvas ||
+                (this._domCache.canvas = document.getElementById("myCanvas"))
         };
     }
 
@@ -390,8 +399,7 @@ class FocusCycleManager {
         const container = this._containerEl(zone);
 
         if (zone === "workspace") {
-            const ws = document.getElementById("canvasHolder");
-            const cv = document.getElementById("canvas");
+            const { holder: ws, overlay: cv } = this._workspaceElements();
             if (ws) {
                 if (typeof ws.hasAttribute !== "function" || !ws.hasAttribute("tabindex")) {
                     ws.setAttribute("tabindex", "-1");
@@ -485,9 +493,17 @@ class FocusCycleManager {
     // Helpers
     // ------------------------------------------------------------------
     _containerEl(zone) {
-        if (zone === "workspace") return document.getElementById("canvasHolder");
-        if (zone === "toolbar") return document.getElementById("toolbars");
-        if (zone === "palette") return document.getElementById("palette");
+        if (zone === "workspace") return this._workspaceElements().holder;
+        if (zone === "toolbar")
+            return (
+                this._domCache.toolbars ||
+                (this._domCache.toolbars = document.getElementById("toolbars"))
+            );
+        if (zone === "palette")
+            return (
+                this._domCache.palette ||
+                (this._domCache.palette = document.getElementById("palette"))
+            );
         return null;
     }
 
