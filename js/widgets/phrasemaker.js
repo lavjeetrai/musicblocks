@@ -743,8 +743,8 @@ class PhraseMaker {
             // Depending on the row, we choose a different background color.
             if (this.rowLabels[i] === "print") break;
             else if (
-                PhraseMakerUtils.MATRIXGRAPHICS.indexOf(this.rowLabels[i]) !== -1 ||
-                PhraseMakerUtils.MATRIXGRAPHICS2.indexOf(this.rowLabels[i]) !== -1
+                PhraseMakerUtils.MATRIXGRAPHICS.includes(this.rowLabels[i]) ||
+                PhraseMakerUtils.MATRIXGRAPHICS2.includes(this.rowLabels[i])
             ) {
                 cellColor = this.platformColor.graphicsLabelBackground;
             } else {
@@ -2775,7 +2775,7 @@ class PhraseMaker {
                     this._noteStored[i]
                 ]);
             } else if (PhraseMakerUtils.MATRIXGRAPHICS2.includes(this.rowLabels[i])) {
-                gi = PhraseMakerUtils.MATRIXGRAPHICS.indexOf(this.rowLabels[i]) + 200;
+                gi = PhraseMakerUtils.MATRIXGRAPHICS2.indexOf(this.rowLabels[i]) + 200;
                 sortableList.push([
                     -gi,
                     this.rowLabels[i],
@@ -2886,7 +2886,6 @@ class PhraseMaker {
     _export() {
         const exportWindow = window.open("");
         if (!exportWindow) {
-            console.debug("Could not create export window");
             this.activity.errorMsg(
                 this._(
                     "Could not open export window. This is often caused by a browser pop-up blocker — check your settings and try again."
@@ -3256,7 +3255,10 @@ class PhraseMaker {
             // Add the notes to the matrix a la addNote.
             for (let j = 0; j < this.rowLabels.length; j++) {
                 // Depending on the row, we choose a different background color.
-                if (PhraseMakerUtils.MATRIXGRAPHICS.indexOf(this.rowLabels[j]) !== -1) {
+                if (
+                    PhraseMakerUtils.MATRIXGRAPHICS.includes(this.rowLabels[j]) ||
+                    PhraseMakerUtils.MATRIXGRAPHICS2.includes(this.rowLabels[j])
+                ) {
                     cellColor = this.platformColor.graphicsBackground;
                 } else {
                     drumName = this._deps.getDrumName(this.rowLabels[j]);
@@ -3393,8 +3395,8 @@ class PhraseMaker {
             for (let i = 0; i < rowCount; i++) {
                 // Depending on the row, we choose a different background color.
                 if (
-                    PhraseMakerUtils.MATRIXGRAPHICS.indexOf(this.rowLabels[i]) !== -1 ||
-                    PhraseMakerUtils.MATRIXGRAPHICS2.indexOf(this.rowLabels[i]) !== -1
+                    PhraseMakerUtils.MATRIXGRAPHICS.includes(this.rowLabels[i]) ||
+                    PhraseMakerUtils.MATRIXGRAPHICS2.includes(this.rowLabels[i])
                 ) {
                     cellColor = this.platformColor.graphicsBackground;
                 } else {
@@ -4642,8 +4644,8 @@ class PhraseMaker {
             graphicsBlock = false;
             graphicNote = note.split(": ");
             if (
-                PhraseMakerUtils.MATRIXGRAPHICS.indexOf(graphicNote[0]) !== -1 ||
-                PhraseMakerUtils.MATRIXGRAPHICS2.indexOf(graphicNote[0]) !== -1
+                PhraseMakerUtils.MATRIXGRAPHICS.includes(graphicNote[0]) ||
+                PhraseMakerUtils.MATRIXGRAPHICS2.includes(graphicNote[0])
             ) {
                 graphicsBlock = true;
             }
@@ -4690,8 +4692,6 @@ class PhraseMaker {
                             null
                         );
                     }
-                } else {
-                    console.debug("Cannot parse note object: " + obj);
                 }
             }
         } else if (PhraseMakerUtils.MATRIXSYNTHS.includes(obj[0])) {
