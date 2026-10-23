@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //* globals *//
 
 globalActivity.logo.pluginVars['rodi'] = {
-   'RODI_BASE_URL': 'http://192.168.4.1:1234',
+   'RODI_BASE_URL': 'https://192.168.4.1:1234',
    'sensorsCache': null,
    'sensorsValidFor': 100,
    'sensorsCacheExpires': 0,
