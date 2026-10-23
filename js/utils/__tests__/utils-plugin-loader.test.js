@@ -331,4 +331,10 @@ describe("updatePluginObj - prototype pollution guard", () => {
         expect(activity.pluginObjs["PALETTEPLUGINS"]["maths"]).toEqual({ name: "maths" });
         expect(activity.pluginObjs["ARGPLUGINS"]["a"]).toBe("code");
     });
+
+    it("ensures RODI_BASE_URL in plugins/rodi.json uses HTTPS", () => {
+        const rodiPlugin = require("../../../plugins/rodi.json");
+        expect(rodiPlugin.GLOBALS).toContain("https://192.168.4.1:1234");
+        expect(rodiPlugin.GLOBALS).not.toContain("http://192.168.4.1:1234");
+    });
 });
