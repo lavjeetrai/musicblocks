@@ -48,7 +48,7 @@ describe("JavaScript editor and block search", () => {
 
         // js/widgets/jseditor.js _setup() builds a CodeJar-backed code box
         // (".editor.language-javascript"), a line-number gutter
-        // ("#editorLines"), a debug-button gutter ("#debugButtons"), and a
+        // ("#editorLines"), a button gutter ("#debugButtons"), and a
         // console pane ("#console_label" / "#editorConsole") - DOM that only
         // exists once _setup() has completed successfully.
         cy.get(".windowFrame .wfbWidget .editor.language-javascript").should("be.visible");
