@@ -3352,7 +3352,7 @@ table {
 
 /* ... more sizes ... */
 /* ======================================================
-   FIX: Responsive Tour Arrows (Mobile vs Desktop)
+   Responsive Tour Arrows (Mobile vs Desktop)
    This overrides the static positions set earlier in the file.
    ====================================================== */
 
@@ -3392,7 +3392,7 @@ table {
 }
 
 /* ======================================================
-   FIX: Center the Welcome Modal on Mobile
+   Center the Welcome Modal on Mobile
    ====================================================== */
 @media screen and (max-width: 600px) {
     #helpDiv {
@@ -3408,7 +3408,7 @@ table {
         top: 15% !important;
     }
 
-    /* Fix the inner text box width so it doesn't overflow */
+    /* Adjust the inner text box width so it doesn't overflow */
     #helpBodyDiv {
         width: calc(100% - 110px) !important;
         margin: 0 auto !important;
