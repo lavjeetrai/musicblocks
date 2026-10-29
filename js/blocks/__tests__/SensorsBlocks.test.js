@@ -350,6 +350,9 @@ describe("setupSensorsBlocks", () => {
             it("should throw an error for invalid pixel data", () => {
                 const pixelData = [100, 150]; // Invalid length
                 expect(() => block.detectColor(pixelData)).toThrow("Invalid pixel data");
+
+                const pixelDataLength3 = [100, 150, 200]; // Invalid length 3
+                expect(() => block.detectColor(pixelDataLength3)).toThrow("Invalid pixel data");
             });
         });
 
