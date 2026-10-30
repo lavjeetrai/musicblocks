@@ -134,6 +134,23 @@ function _pitchToNoteName(pitchEl) {
 }
 
 /**
+ * Builds a lookup map from score-instrument id to instrument-name (or fallback "kick drum").
+ * @param {Document} doc - the whole document
+ * @returns {Map<string, string>}
+ */
+function _buildInstrumentMap(doc) {
+    const map = new Map();
+    for (const scoreInstrument of doc.querySelectorAll("score-instrument")) {
+        const id = scoreInstrument.getAttribute("id");
+        if (id) {
+            const name = _text(scoreInstrument, "instrument-name")?.trim();
+            map.set(id, name || "kick drum");
+        }
+    }
+    return map;
+}
+
+/**
  * The Music Blocks drum name for an unpitched <note>, from the
  * <score-instrument><instrument-name> its <instrument id> references.
  *
@@ -144,23 +161,13 @@ function _pitchToNoteName(pitchEl) {
  * resolve, the same default js/midi.js's own importer uses for the same reason.
  *
  * @param {Element} noteEl - a MusicXML <note> element with an <unpitched> child
- * @param {Document} doc - the whole document, since <score-instrument> lives in
- *     <part-list>, not inside the part being walked
+ * @param {Map<string, string>} instrumentMap - lookup map from instrument id to drum name
  * @returns {string}
  */
-function _drumName(noteEl, doc) {
+function _drumName(noteEl, instrumentMap) {
     const instrumentId = noteEl.querySelector(":scope > instrument")?.getAttribute("id");
     if (!instrumentId) return "kick drum";
-    // Matched by comparing the id in JS, not interpolated into a CSS attribute
-    // selector -- an id containing a quote or other selector-special character
-    // would otherwise produce a malformed (or, worse, unintended) selector.
-    for (const scoreInstrument of doc.querySelectorAll("score-instrument")) {
-        if (scoreInstrument.getAttribute("id") === instrumentId) {
-            const name = _text(scoreInstrument, "instrument-name")?.trim();
-            return name || "kick drum";
-        }
-    }
-    return "kick drum";
+    return instrumentMap.get(instrumentId) ?? "kick drum";
 }
 
 // Inverse of js/mxml.js's _MAJOR_FIFTHS: a <fifths> count -> the major-key tonic
@@ -513,11 +520,11 @@ function _applyRepeats(repeats, noteBlocks, noteStartIds, noteEndIds, blockId) {
  * @param {Element} partEl - a MusicXML <part> element
  * @param {number} blockId - the next free block id (the preamble's last id + 1)
  * @param {number} chainPrevId - the block id the first note should connect from
- * @param {Document} doc - the whole document, for drum-name lookups
+ * @param {Map<string, string>} instrumentMap - lookup map for drum names
  * @returns {{noteBlocks: Array, lastBlockId: number, producedNotes: boolean,
  *     firstBlockId: number}}
  */
-function _processPart(partEl, blockId, chainPrevId, doc) {
+function _processPart(partEl, blockId, chainPrevId, instrumentMap) {
     const noteBlocks = [];
     const noteStartIds = [];
     const noteEndIds = [];
@@ -587,7 +594,7 @@ function _processPart(partEl, blockId, chainPrevId, doc) {
             if (isRest) {
                 content = null;
             } else if (unpitchedEl !== null) {
-                content = { type: "drum", name: _drumName(child, doc) };
+                content = { type: "drum", name: _drumName(child, instrumentMap) };
             } else {
                 content = { type: "pitch", ..._pitchToNoteName(pitchEl) };
             }
@@ -669,9 +676,10 @@ function _processPart(partEl, blockId, chainPrevId, doc) {
  * @param {string} voiceLabel - this part's turtle name, e.g. "Voice 1"
  * @param {number|null} tempoBpm - shared across every part, same as a MIDI
  *     file's tempo applies to every track
+ * @param {Map<string, string>} instrumentMap - lookup map for drum names
  * @returns {{blocks: Array, nextBlockId: number}}
  */
-function _buildPartBlocks(partEl, startId, title, voiceLabel, tempoBpm, doc) {
+function _buildPartBlocks(partEl, startId, title, voiceLabel, tempoBpm, instrumentMap) {
     const timeSignature = _initialTimeSignature(partEl);
     const keySignature = _keySignature(partEl);
     const { preamble, settimbreId, nextBlockId } = _buildPreamble(
@@ -686,7 +694,7 @@ function _buildPartBlocks(partEl, startId, title, voiceLabel, tempoBpm, doc) {
         partEl,
         nextBlockId,
         settimbreId,
-        doc
+        instrumentMap
     );
 
     if (producedNotes) {
@@ -732,6 +740,7 @@ const setupActivityMxmlParser = activityInstance => {
             doc.querySelector("movement-title")?.textContent ??
             "title";
         const tempoBpm = _findTempo(doc);
+        const instrumentMap = _buildInstrumentMap(doc);
 
         let blockId = 0;
         const allBlocks = [];
@@ -742,7 +751,7 @@ const setupActivityMxmlParser = activityInstance => {
                 title,
                 `Voice ${index + 1}`,
                 tempoBpm,
-                doc
+                instrumentMap
             );
             allBlocks.push(...blocks);
             blockId = nextBlockId;
