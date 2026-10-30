@@ -860,7 +860,6 @@ describe("TurtlesModel doGrid initialization order", () => {
             canvas: {},
             hideAuxMenu: jest.fn(),
             hideGrids: jest.fn(),
-            _doCartesianPolar: jest.fn(),
             closeHelpfulWheel
         };
     }
