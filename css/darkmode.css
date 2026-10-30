@@ -123,7 +123,7 @@ body.highcontrast {
     background: #1976d2;
 }
 
-/* Fix white side bars in Help / Tour widget */
+/* Dark mode side bars styling in Help / Tour widget */
 .dark #floatingWindows .wfWinBody {
     background-color: var(--color-bg-secondary) !important;
 }
@@ -164,7 +164,7 @@ body.highcontrast {
     background-color: #ffffff;
 }
 
-/* Fix white table header strip in floating widgets during dark mode while preserving table body colors */
+/* Dark mode table header strip styling in floating widgets while preserving table body colors */
 .dark #floatingWindows table thead tr:first-child td,
 .dark #floatingWindows table thead tr:first-child th {
     background-color: var(--color-bg-tertiary) !important;
@@ -205,7 +205,7 @@ body.highcontrast {
     padding: 2px;
 }
 
-/* Fix search autocomplete dropdown text in dark mode */
+/* Dark mode search autocomplete dropdown text styling */
 body.dark #ui-id-1 .ui-menu-item-wrapper,
 body.dark #ui-id-1 a {
     color: var(--color-text-primary) !important;
