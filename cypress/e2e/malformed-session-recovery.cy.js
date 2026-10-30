@@ -103,8 +103,7 @@ describe("recovery from a malformed session past the first load chunk", () => {
             // exactly that many non-trash blocks, and exactly one "start"
             // hat, rules out the 19 "vspace" blocks the failed load had
             // already placed before hitting block 20 still being rendered
-            // underneath it (the bug reported against the first version of
-            // this fix, once the storage-level recovery existed but didn't
+            // underneath it (a bug where storage-level recovery existed but didn't
             // clear the canvas).
             expect(nonTrash, "should land on exactly the clean DATAOBJS project").to.have.length(
                 31
