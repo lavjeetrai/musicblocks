@@ -235,7 +235,7 @@ class TimbreBlocks {
             let sibling = slider.nextElementSibling;
             while (sibling) {
                 if (sibling.classList.contains("thumb")) {
-                    const valSpan = sibling.querySelector(".value");
+                    const valSpan = sibling.getElementsByClassName("value")[0];
                     if (valSpan) {
                         valSpan.textContent = slider.value;
                     }
@@ -694,7 +694,7 @@ class TimbreBlocks {
                 let sibling = slider.nextElementSibling;
                 while (sibling) {
                     if (sibling.classList.contains("thumb")) {
-                        const valSpan = sibling.querySelector(".value");
+                        const valSpan = sibling.getElementsByClassName("value")[0];
                         if (valSpan) {
                             valSpan.textContent = slider.value;
                         }
