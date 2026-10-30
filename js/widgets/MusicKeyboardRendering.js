@@ -205,6 +205,9 @@ const MusicKeyboardRendering = {
             for (let i = 0; i < this.layout.length; i++) {
                 // The buttons get added to the embedded table.
                 row = docById("mkb" + i);
+                if (!row) {
+                    continue;
+                }
                 for (let j = 0; j < row.cells.length; j++) {
                     cell = row.cells[j];
                     // Give each clickable cell a unique id
