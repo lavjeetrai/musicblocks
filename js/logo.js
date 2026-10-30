@@ -2353,7 +2353,7 @@ class Logo {
                 };
 
                 const label = blockLabels[blockName];
-                const blockValue = currentBlock.value;
+                const blockValue = args[args.length - 1];
 
                 if (blockValue === null || blockValue === undefined) {
                     logo.deps.textMsg("null block value");
