@@ -5,7 +5,7 @@ window.MB_IS_DEV = false;
 // API keys — centralised here so they are easy to rotate and audit.
 // Long-term these should be moved to a server-side proxy so that
 // secrets are never shipped to the client.
-window.MB_PLANET_API_KEY = "3f2d3a4c-c7a4-4c3c-892e-ac43784f7381";
+window.MB_PLANET_API_KEY = "";
 window.MB_PROJECT_API_KEY = "3tgTzMXbbw6xEKX7";
 window.MB_GIT_BACKEND_URL = "https://git-planet.sugarlabs.org";
 // For local dev: run `ssh -L 5001:127.0.0.1:5001 <user>@containers.sugarlabs.org -N`

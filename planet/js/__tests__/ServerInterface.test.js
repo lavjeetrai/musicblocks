@@ -33,7 +33,7 @@ describe("ServerInterface", () => {
         originalConsoleError = console.error;
         originalConsoleDebug = console.debug;
 
-        window.MB_PLANET_API_KEY = "3f2d3a4c-c7a4-4c3c-892e-ac43784f7381";
+        window.MB_PLANET_API_KEY = "test-api-key";
 
         mockRequestManager = {
             throttledRequest: jest.fn((data, logic) => {

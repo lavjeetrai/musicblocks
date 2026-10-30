@@ -82,3 +82,28 @@ describe("/healthz", () => {
         expect(res.headers["cache-control"]).toBe("no-store");
     });
 });
+
+describe("/env.js", () => {
+    let server;
+    let port;
+
+    beforeAll(done => {
+        server = app.listen(0, "127.0.0.1", () => {
+            port = server.address().port;
+            done();
+        });
+    });
+
+    afterAll(done => {
+        server.close(done);
+    });
+
+    it("returns HTTP 200 with JavaScript content type and sets MB_PLANET_API_KEY from environment or default empty string", async () => {
+        const res = await request(port, "/env.js");
+        expect(res.status).toBe(200);
+        expect(res.headers["content-type"]).toMatch(/application\/javascript/);
+        expect(res.body).toContain(
+            `window.MB_PLANET_API_KEY = ${JSON.stringify(process.env.MB_PLANET_API_KEY || "")};`
+        );
+    });
+});
