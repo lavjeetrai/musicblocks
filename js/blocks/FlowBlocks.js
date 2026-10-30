@@ -1197,7 +1197,7 @@ function setupFlowBlocks(activity) {
             if (args[1] === undefined) return;
 
             let arg;
-            if (args[0] === null || typeof args[0] !== "number" || args[0] < 1) {
+            if (!Number.isFinite(args[0]) || args[0] < 1) {
                 if (args[0] < 0) activity.errorMsg(POSNUMBER, blk);
                 return [null, 0];
             } else {
@@ -1233,13 +1233,15 @@ function setupFlowBlocks(activity) {
          * @param {object} logo - The logo object.
          * @param {object} turtle - The turtle object.
          * @param {number} blk - The block number.
+         * @returns {number|undefined} The duplicate factor, or undefined in status matrix print registration.
          */
         arg(logo, turtle, blk) {
             const blockList = activity.blocks.blockList;
             if (logo.inStatusMatrix && blockList[blockList[blk].connections[0]].name === "print") {
                 logo.statusFields.push([blk, "duplicate"]);
             } else {
-                blockList[blk].value = activity.turtles.ithTurtle(turtle).singer.duplicateFactor;
+                return (blockList[blk].value =
+                    activity.turtles.ithTurtle(turtle).singer.duplicateFactor);
             }
         }
     }

@@ -63,6 +63,7 @@ function makeKeyboardAccessible(element, label, onActivate) {
     }
 
     const keydownHandler = event => {
+        if (event.repeat) return;
         if (event.key !== "Enter" && event.key !== " " && event.key !== "Spacebar") return;
 
         event.preventDefault();
@@ -300,7 +301,7 @@ function createSharePopup(popupId, items, anchor) {
     };
 
     const closeHandler = e => {
-        if (!popup.contains(e.target)) {
+        if (!popup.contains(e.target) && !anchor.contains?.(e.target)) {
             cleanup();
         }
     };

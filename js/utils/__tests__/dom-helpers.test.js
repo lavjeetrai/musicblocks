@@ -360,6 +360,24 @@ describe("makeKeyboardAccessible()", () => {
         });
     });
 
+    it("ignores repeated keydown events when key is held down", () => {
+        const button = document.createElement("div");
+        const onActivate = jest.fn();
+        makeKeyboardAccessible(button, "Action", onActivate);
+
+        const event = new KeyboardEvent("keydown", {
+            key: "Enter",
+            repeat: true,
+            bubbles: true,
+            cancelable: true
+        });
+        const preventDefaultSpy = jest.spyOn(event, "preventDefault");
+        button.dispatchEvent(event);
+
+        expect(preventDefaultSpy).not.toHaveBeenCalled();
+        expect(onActivate).not.toHaveBeenCalled();
+    });
+
     it("replaces previous handler when called multiple times on the same element", () => {
         const button = document.createElement("div");
         const firstHandler = jest.fn();
@@ -602,6 +620,24 @@ describe("createSharePopup()", () => {
         );
         expect(toggledResult).toBeNull();
         expect(document.getElementById("togglePopupTest")).toBeNull();
+    });
+
+    it("closes when the anchor is clicked a second time", () => {
+        const button = document.createElement("button");
+        const icon = document.createElement("span");
+        button.appendChild(icon);
+        document.body.appendChild(button);
+        button.addEventListener("click", () => {
+            createSharePopup("anchorToggleTest", [["Export", jest.fn()]], button);
+        });
+
+        button.click();
+        expect(document.getElementById("anchorToggleTest")).not.toBeNull();
+
+        icon.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        icon.click();
+
+        expect(document.getElementById("anchorToggleTest")).toBeNull();
     });
 
     it("updates item styling on mouseenter and mouseleave", () => {

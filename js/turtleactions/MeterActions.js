@@ -88,21 +88,28 @@ function setupMeterActions(activity) {
             // Clear previous default strong beats before setting new ones
             _clearDefaultStrongBeats(tur.singer);
 
-            // setup default strong / weak beats until any strong beat block is used
-            if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 4) {
-                tur.singer.beatList.push(1);
-                tur.singer.beatList.push(3);
-                tur.singer.defaultStrongBeats = true;
-            } else if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 2) {
-                tur.singer.beatList.push(1);
-                tur.singer.defaultStrongBeats = true;
-            } else if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 3) {
-                tur.singer.beatList.push(1);
-                tur.singer.defaultStrongBeats = true;
-            } else if (tur.singer.noteValuePerBeat === 8 && tur.singer.beatsPerMeasure === 6) {
-                tur.singer.beatList.push(1);
-                tur.singer.beatList.push(4);
-                tur.singer.defaultStrongBeats = true;
+            // Default strong beats only stand in until an on strong beat block picks
+            // some. A meter change after that block must keep the user's beats, not
+            // add the defaults back over them.
+            const userStrongBeats =
+                tur.singer.beatList.some(beat => typeof beat === "number") ||
+                tur.singer.factorList.length > 0;
+            if (!userStrongBeats) {
+                if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 4) {
+                    tur.singer.beatList.push(1);
+                    tur.singer.beatList.push(3);
+                    tur.singer.defaultStrongBeats = true;
+                } else if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 2) {
+                    tur.singer.beatList.push(1);
+                    tur.singer.defaultStrongBeats = true;
+                } else if (tur.singer.noteValuePerBeat === 4 && tur.singer.beatsPerMeasure === 3) {
+                    tur.singer.beatList.push(1);
+                    tur.singer.defaultStrongBeats = true;
+                } else if (tur.singer.noteValuePerBeat === 8 && tur.singer.beatsPerMeasure === 6) {
+                    tur.singer.beatList.push(1);
+                    tur.singer.beatList.push(4);
+                    tur.singer.defaultStrongBeats = true;
+                }
             }
 
             activity.logo.notation.notationMeter(
@@ -160,7 +167,7 @@ function setupMeterActions(activity) {
         }
 
         static setMasterBPM(bpm, beatValue, blk) {
-            if (Number.isNaN(bpm)) {
+            if (!Number.isFinite(bpm) || bpm <= 0) {
                 activity.errorMsg(_("BPM must be a positive number."), blk);
                 return;
             }
@@ -217,7 +224,8 @@ function setupMeterActions(activity) {
             const orgTurtle = turtle;
 
             // Create a companion turtle if it doesn't exist
-            if (!activity.turtles.getTurtle(orgTurtle).companionTurtle) {
+            const companionTurtle = activity.turtles.getTurtle(orgTurtle).companionTurtle;
+            if (companionTurtle === undefined || companionTurtle === null) {
                 turtle = activity.turtles.getTurtleCount();
                 activity.turtles.getTurtle(orgTurtle).companionTurtle = turtle;
                 activity.turtles.addTurtle(activity.blocks.blockList[blk], {});
@@ -341,7 +349,7 @@ function setupMeterActions(activity) {
         }
 
         static getNotesPlayed(noteValue, turtle) {
-            if (noteValue === null || noteValue === 0) return 0;
+            if (!Number.isFinite(noteValue) || noteValue <= 0) return 0;
 
             const tur = activity.turtles.ithTurtle(turtle);
             return tur.singer.notesPlayed[0] / tur.singer.notesPlayed[1] / noteValue;
