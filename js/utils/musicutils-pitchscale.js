@@ -1029,7 +1029,6 @@ var getNoteFromSolfege = (
  * @param {number} transposition - The transposition value (semitones, or EDO steps if isAlreadyEdoSteps is true).
  * @param {string} keySignature - The key signature (default is "C major").
  * @param {boolean} movable - Whether the key signature is movable (default is false).
- * @param {string} direction - The direction of the note (unused parameter).
  * @param {string} errorMsg - The error message (unused parameter).
  * @param {string} [temperament="equal"] - The temperament to use (default is "equal").
  * @param {boolean} [isAlreadyEdoSteps=false] - If true, transposition is already in EDO steps; skip semitone-to-EDO conversion.
