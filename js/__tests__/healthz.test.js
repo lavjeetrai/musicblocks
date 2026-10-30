@@ -82,3 +82,26 @@ describe("/healthz", () => {
         expect(res.headers["cache-control"]).toBe("no-store");
     });
 });
+
+describe("/env.js", () => {
+    let server;
+    let port;
+
+    beforeAll(done => {
+        server = app.listen(0, "127.0.0.1", () => {
+            port = server.address().port;
+            done();
+        });
+    });
+
+    afterAll(done => {
+        server.close(done);
+    });
+
+    it("returns HTTP 200 with JavaScript content type and default empty MB_PROJECT_API_KEY", async () => {
+        const res = await request(port, "/env.js");
+        expect(res.status).toBe(200);
+        expect(res.headers["content-type"]).toMatch(/application\/javascript/);
+        expect(res.body).toContain('window.MB_PROJECT_API_KEY = "";');
+    });
+});
