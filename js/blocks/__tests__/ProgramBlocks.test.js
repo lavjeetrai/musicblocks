@@ -241,6 +241,7 @@ describe("ProgramBlocks", () => {
         });
 
         test("handles JSON parse error", async () => {
+            logo.turtleHeaps.testHeap = ["oldData"];
             global.fetch = jest.fn().mockResolvedValue({
                 ok: true,
                 text: jest.fn().mockResolvedValue("invalid json")
@@ -252,7 +253,11 @@ describe("ProgramBlocks", () => {
             // Wait for the async fetch to complete
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(activity.errorMsg).toHaveBeenCalled();
+            expect(activity.errorMsg).toHaveBeenCalledWith(
+                expect.stringContaining("Error parsing JSON data:"),
+                1
+            );
+            expect(logo.turtleHeaps.testHeap).toEqual(["oldData"]);
         });
 
         test("handles network error", async () => {
