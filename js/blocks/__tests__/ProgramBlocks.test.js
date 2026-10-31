@@ -1315,5 +1315,72 @@ describe("ProgramBlocks", () => {
             getBlock("makeblock").arg(logo, 0, 0, null);
             expect(activity.errorMsg).toHaveBeenCalledWith(expect.stringContaining("Warning"), 0);
         });
+
+        test("creates 'note' block with 4 or more args", () => {
+            setupArg("note", ["sol", 4, 4, 8]);
+            getBlock("makeblock").arg(logo, 0, 0, null);
+            expect(activity.blocks.loadNewBlocks).toHaveBeenCalled();
+        });
+
+        test("creates 'tempo' block with 4 or more args", () => {
+            setupArg("tempo", [90, 4, 8, 12]);
+            getBlock("makeblock").arg(logo, 0, 0, null);
+            expect(activity.blocks.loadNewBlocks).toHaveBeenCalled();
+        });
+
+        test("creates 'volume' block with 4 or more args", () => {
+            setupArg("volume", ["piano", 50, "extra", "more"]);
+            getBlock("makeblock").arg(logo, 0, 0, null);
+            expect(activity.blocks.loadNewBlocks).toHaveBeenCalled();
+        });
+
+        test("handles string arg with matching textin dock type", () => {
+            setupArg("customblock", ["hello"]);
+            activity.blocks.palettes.getProtoNameAndPalette.mockReturnValue([
+                "proto1",
+                "program",
+                "customblock"
+            ]);
+            activity.blocks.protoBlockDict["proto1"] = { dockTypes: [null, "textin"] };
+            getBlock("makeblock").arg(logo, 0, 0, null);
+            expect(activity.errorMsg).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("Additional Coverage Edge Cases", () => {
+        test("LoadHeapFromAppBlock handles unsafe url", () => {
+            const blk = { name: "loadheapfromapp" };
+            getBlock("loadHeapFromApp").flow(["heap1", "javascript:alert(1)"], logo, null, blk);
+            expect(activity.errorMsg).toHaveBeenCalledWith("Invalid URL", blk);
+        });
+
+        test("SaveHeapToAppBlock handles unsafe url", () => {
+            const blk = { name: "saveheaptoapp" };
+            logo.turtleHeaps["heap1"] = [1, 2, 3];
+            getBlock("saveHeapToApp").flow(["heap1", "javascript:alert(1)"], logo, null, blk);
+            expect(activity.errorMsg).toHaveBeenCalledWith("Invalid URL", blk);
+        });
+
+        test("DockBlock docks to hidden block", () => {
+            const blk = { name: "dock" };
+            activity.blocks.blockList = [
+                { name: "block0", connections: [null, 1] },
+                { name: "hidden", connections: [null, null] },
+                { name: "block2", connections: [null] }
+            ];
+            getBlock("dockblock").flow([0, 1, 2], logo, null, blk);
+            expect(activity.blocks.adjustDocks).toHaveBeenCalledWith(1, true);
+        });
+
+        test("DockBlock disconnects existing connection", () => {
+            const blk = { name: "dock" };
+            activity.blocks.blockList = [
+                { name: "block0", connections: [null, 1] },
+                { name: "block1", connections: [0, null] },
+                { name: "block2", connections: [null] }
+            ];
+            getBlock("dockblock").flow([0, 1, 2], logo, null, blk);
+            expect(activity.blocks.blockList[1].connections[0]).toBeNull();
+        });
     });
 });
