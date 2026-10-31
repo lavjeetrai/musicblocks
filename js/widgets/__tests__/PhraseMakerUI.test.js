@@ -97,6 +97,40 @@ describe("PhraseMakerUI", () => {
         });
     });
 
+    describe("stylePhraseMaker", () => {
+        test("returns early if floatingWindows div does not exist", () => {
+            expect(() => PhraseMakerUI.stylePhraseMaker({})).not.toThrow();
+        });
+
+        test("applies styles and classes when windowFrame exceeds screen dimensions", () => {
+            const floatingWindows = document.createElement("div");
+            floatingWindows.id = "floatingWindows";
+            document.body.appendChild(floatingWindows);
+
+            const windowFrame = document.createElement("div");
+            windowFrame.className = "windowFrame";
+            windowFrame.style.width = "2000px";
+            windowFrame.style.height = "2000px";
+
+            const wfWinBody = document.createElement("div");
+            wfWinBody.className = "wfWinBody";
+
+            const wfbWidget = document.createElement("div");
+            wfbWidget.className = "wfbWidget";
+
+            windowFrame.appendChild(wfWinBody);
+            windowFrame.appendChild(wfbWidget);
+            floatingWindows.appendChild(windowFrame);
+
+            PhraseMakerUI.stylePhraseMaker({});
+
+            expect(wfWinBody.classList.contains("pm-win-body")).toBe(true);
+            expect(wfbWidget.classList.contains("pm-widget-container")).toBe(true);
+
+            document.body.removeChild(floatingWindows);
+        });
+    });
+
     describe("calculateNoteWidth", () => {
         test("returns correct width for eighth note (noteValue=8)", () => {
             const pm = createMockPM();
