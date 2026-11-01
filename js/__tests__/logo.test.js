@@ -373,6 +373,10 @@ function makeNumArgBlock(name, value = null) {
 // ─── Queue ────────────────────────────────────────────────────────────────────
 
 describe("Queue Class", () => {
+    beforeEach(() => {
+        Queue._pool = [];
+    });
+
     test("constructor initializes all properties correctly", () => {
         const queue = new Queue(1, 5, 0, ["arg1", "arg2"]);
 
@@ -395,6 +399,42 @@ describe("Queue Class", () => {
         const queue = new Queue(10, 3, 5, []);
 
         expect(queue.args).toEqual([]);
+    });
+
+    test("obtain allocates when pool is empty", () => {
+        const queue = Queue.obtain(1, 5, 0, ["arg1"]);
+
+        expect(queue).toBeInstanceOf(Queue);
+        expect(queue.blk).toBe(1);
+        expect(queue.count).toBe(5);
+        expect(queue.parentBlk).toBe(0);
+        expect(queue.args).toEqual(["arg1"]);
+    });
+
+    test("recycle adds instance to pool and obtain reuses it", () => {
+        const queue1 = Queue.obtain(1, 5, 0, ["a"]);
+        Queue.recycle(queue1);
+
+        expect(Queue._pool.length).toBe(1);
+
+        const queue2 = Queue.obtain(2, 10, 1, ["b"]);
+        expect(queue2).toBe(queue1);
+        expect(queue2.blk).toBe(2);
+        expect(queue2.count).toBe(10);
+        expect(queue2.parentBlk).toBe(1);
+        expect(queue2.args).toEqual(["b"]);
+        expect(Queue._pool.length).toBe(0);
+    });
+
+    test("recycle ignores invalid items and caps pool at 512", () => {
+        Queue.recycle(null);
+        Queue.recycle({});
+        expect(Queue._pool.length).toBe(0);
+
+        for (let i = 0; i < 520; i++) {
+            Queue.recycle(new Queue(i, 1, 0, null));
+        }
+        expect(Queue._pool.length).toBe(512);
     });
 });
 
@@ -916,6 +956,22 @@ describe("Logo step", () => {
             }
         ]);
     });
+
+    test("pools and recycles stepQueue item objects in TURTLESTEP mode", () => {
+        Logo._stepItemPool = [];
+        const item1 = Logo._obtainStepItem(1, 1, "arg");
+        expect(item1).toEqual({ blk: 1, isflow: 1, receivedArg: "arg" });
+
+        Logo._recycleStepItem(item1);
+        expect(Logo._stepItemPool.length).toBe(1);
+
+        const item2 = Logo._obtainStepItem(2, 0, null);
+        expect(item2).toBe(item1);
+        expect(item2.blk).toBe(2);
+        expect(item2.isflow).toBe(0);
+        expect(item2.receivedArg).toBeNull();
+        expect(Logo._stepItemPool.length).toBe(0);
+    });
 });
 
 // ─── Logo _restoreConnections ─────────────────────────────────────────────────
@@ -1192,6 +1248,14 @@ describe("Logo doStopTurtles", () => {
         logo.doStopTurtles();
 
         expect(logo.stopTurtle).toBe(true);
+    });
+
+    test("ends the run generation so callbacks from the stopped run can tell", () => {
+        const run = logo.runGeneration;
+
+        logo.doStopTurtles();
+
+        expect(logo.runGeneration).not.toBe(run);
     });
 
     test("marks all turtles as stopped", () => {
@@ -1614,6 +1678,16 @@ describe("Logo runLogoCommands", () => {
         logo.runLogoCommands(null, null);
 
         expect(logo.inTempo).toBe(false);
+    });
+
+    test("starts a new run generation", () => {
+        mockActivity.blocks.stackList = [];
+        logo.blockList = [];
+        const run = logo.runGeneration;
+
+        logo.runLogoCommands(null, null);
+
+        expect(logo.runGeneration).not.toBe(run);
     });
 
     test("falls back to default cursor when no start stacks", () => {

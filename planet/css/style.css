@@ -46,6 +46,10 @@
 	justify-content: center;
 }
 
+button.project-icon {
+	color: #ffab40;
+}
+
 .projectscontainer {
 	display: -webkit-box;
 	display: -ms-flexbox;
@@ -225,6 +229,19 @@
 	flex-wrap: wrap ;
 }
 
+.global-tags-container .global-tags-more {
+	flex: 0 0 auto;
+	border: 0;
+	cursor: pointer;
+	padding: 0 7px;
+}
+
+.global-tags-container .global-tags-more:active,
+.global-tags-container .global-tags-more:focus,
+.global-tags-container .global-tags-more:focus-visible {
+	background-color: #ffab40;
+}
+
 .chipselect {
 	display: inline-block;
 	height: 32px;
@@ -297,8 +314,8 @@ div.select-wrapper * {
 }
 
 .likes-count {
-	position: relative;
-	top: -7px;
+	display: inline-flex;
+	align-items: center;
 }
 
 #search-close {
