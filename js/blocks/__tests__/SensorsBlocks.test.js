@@ -114,10 +114,7 @@ global.toFixed2 = function (value) {
 
 global.isValidHex = require("../../utils/utils-logic.js").isValidHex;
 global.hexToRGB = require("../../utils/utils-logic.js").hexToRGB;
-global.hex2rgb = function (hex) {
-    // Dummy conversion: simply return a fixed rgb string.
-    return "rgb(100,150,200)";
-};
+global.hex2rgb = require("../../utils/utils-logic.js").hex2rgb;
 
 global.searchColors = function (r, g, b) {
     return `rgb(${r},${g},${b})`;
@@ -586,6 +583,158 @@ describe("setupSensorsBlocks", () => {
             const mouseButtonBlock = DummyFlowBlock.createdBlocks["mousebutton"];
             const ret = mouseButtonBlock.arg(logo);
             expect(ret).toEqual(dummyStageMouseDown());
+        });
+        it("should return true or false string in updateParameter", () => {
+            const mouseButtonBlock = DummyFlowBlock.createdBlocks["mousebutton"];
+            activity.blocks.blockList["blkMB1"] = { value: true };
+            expect(mouseButtonBlock.updateParameter(logo, turtleIndex, "blkMB1")).toEqual("true");
+            activity.blocks.blockList["blkMB2"] = { value: false };
+            expect(mouseButtonBlock.updateParameter(logo, turtleIndex, "blkMB2")).toEqual("false");
+        });
+    });
+
+    describe("MyCursoroverBlock", () => {
+        it("should return CursorOver with turtle id", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({ id: "TurtleA" }));
+            const block = DummyFlowBlock.createdBlocks["mycursorover"];
+            const ret = block.arg(logo, turtleIndex);
+            expect(ret).toEqual("CursorOverTurtleA");
+        });
+    });
+
+    describe("MyCursoroutBlock", () => {
+        it("should return CursorOut with turtle id", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({ id: "TurtleB" }));
+            const block = DummyFlowBlock.createdBlocks["mycursorout"];
+            const ret = block.arg(logo, turtleIndex);
+            expect(ret).toEqual("CursorOutTurtleB");
+        });
+    });
+
+    describe("MyCursordownBlock", () => {
+        it("should return CursorDown with turtle id", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({ id: "TurtleC" }));
+            const block = DummyFlowBlock.createdBlocks["mycursordown"];
+            const ret = block.arg(logo, turtleIndex);
+            expect(ret).toEqual("CursorDownTurtleC");
+        });
+    });
+
+    describe("MyCursorupBlock", () => {
+        it("should return CursorUp with turtle id", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({ id: "TurtleD" }));
+            const block = DummyFlowBlock.createdBlocks["mycursorup"];
+            const ret = block.arg(logo, turtleIndex);
+            expect(ret).toEqual("CursorUpTurtleD");
+        });
+    });
+
+    describe("GetColorComponentBlock", () => {
+        it("should return red component from rgb string", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({
+                painter: { canvasColor: "rgb(255,128,64)" }
+            }));
+            const redBlock = DummyFlowBlock.createdBlocks["getred"];
+            const ret = redBlock.arg(logo, turtleIndex);
+            expect(ret).toEqual(100);
+        });
+
+        it("should return green component from rgb string", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({
+                painter: { canvasColor: "rgb(255,128,64)" }
+            }));
+            const greenBlock = DummyFlowBlock.createdBlocks["getgreen"];
+            const ret = greenBlock.arg(logo, turtleIndex);
+            expect(ret).toEqual(50);
+        });
+
+        it("should return blue component from hex string", () => {
+            activity.turtles.getTurtle = jest.fn(() => ({
+                painter: { canvasColor: "#6496c8" }
+            }));
+            const blueBlock = DummyFlowBlock.createdBlocks["getblue"];
+            const ret = blueBlock.arg(logo, turtleIndex);
+            expect(ret).toEqual(78);
+        });
+
+        it("should update parameter formatted to two decimals", () => {
+            activity.blocks.blockList["blkRed"] = { value: 12.3456 };
+            const redBlock = DummyFlowBlock.createdBlocks["getred"];
+            expect(redBlock.updateParameter(logo, turtleIndex, "blkRed")).toEqual("12.35");
+        });
+    });
+
+    describe("updateParameter methods", () => {
+        it("InputValueBlock should return input value or 0", () => {
+            const inputValBlock = DummyFlowBlock.createdBlocks["inputvalue"];
+            logo.inputValues[turtleIndex] = 42;
+            expect(inputValBlock.updateParameter(logo, turtleIndex)).toEqual(42);
+            delete logo.inputValues[turtleIndex];
+            expect(inputValBlock.updateParameter(logo, turtleIndex)).toEqual(0);
+        });
+
+        it("PitchnessBlock should return formatted block value", () => {
+            const block = DummyFlowBlock.createdBlocks["pitchness"];
+            activity.blocks.blockList["blkPitch"] = { value: 440.123 };
+            expect(block.updateParameter(logo, turtleIndex, "blkPitch")).toEqual("440.12");
+        });
+
+        it("LoudnessBlock should return formatted block value", () => {
+            const block = DummyFlowBlock.createdBlocks["loudness"];
+            activity.blocks.blockList["blkLoud"] = { value: 75.8 };
+            expect(block.updateParameter(logo, turtleIndex, "blkLoud")).toEqual("75.80");
+        });
+
+        it("TimeBlock should return block value directly", () => {
+            const block = DummyFlowBlock.createdBlocks["time"];
+            activity.blocks.blockList["blkTime"] = { value: 123 };
+            expect(block.updateParameter(logo, turtleIndex, "blkTime")).toEqual(123);
+        });
+
+        it("MouseYBlock should return block value directly", () => {
+            const block = DummyFlowBlock.createdBlocks["mousey"];
+            activity.blocks.blockList["blkY"] = { value: 200 };
+            expect(block.updateParameter(logo, turtleIndex, "blkY")).toEqual(200);
+        });
+
+        it("MouseXBlock should return block value directly", () => {
+            const block = DummyFlowBlock.createdBlocks["mousex"];
+            activity.blocks.blockList["blkX"] = { value: 150 };
+            expect(block.updateParameter(logo, turtleIndex, "blkX")).toEqual(150);
+        });
+
+        it("ToASCIIBlock should return block value directly", () => {
+            const block = DummyFlowBlock.createdBlocks["toascii"];
+            activity.blocks.blockList["blkAscii"] = { value: 65 };
+            expect(block.updateParameter(logo, turtleIndex, "blkAscii")).toEqual(65);
+        });
+
+        it("KeyboardBlock should return block value directly", () => {
+            const block = DummyFlowBlock.createdBlocks["keyboard"];
+            activity.blocks.blockList["blkKb"] = { value: 13 };
+            expect(block.updateParameter(logo, turtleIndex, "blkKb")).toEqual(13);
+        });
+
+        it("ToASCIIBlock should handle status matrix branch and empty input branch", () => {
+            const block = DummyFlowBlock.createdBlocks["toascii"];
+            activity.blocks.blockList["blkPrint"] = { name: "print" };
+            activity.blocks.blockList["blkAsciiStatus"] = {
+                connections: ["blkPrint", null]
+            };
+            logo.inStatusMatrix = true;
+            block.arg(logo, turtleIndex, "blkAsciiStatus");
+            expect(logo.statusFields).toContainEqual(["blkAsciiStatus", "toascii"]);
+
+            logo.inStatusMatrix = false;
+            activity.blocks.blockList["blkAsciiNoInput"] = {
+                connections: [null, null]
+            };
+            const ret = block.arg(logo, turtleIndex, "blkAsciiNoInput");
+            expect(activity.errorMsg).toHaveBeenCalledWith(
+                global.NOINPUTERRORMSG,
+                "blkAsciiNoInput"
+            );
+            expect(ret).toEqual("A");
         });
     });
 });
