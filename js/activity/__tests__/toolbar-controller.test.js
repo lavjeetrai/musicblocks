@@ -352,8 +352,8 @@ describe("ToolbarController.runStep", () => {
         expect(result).toBe("started");
 
         // Once the (mocked) async dispatch settles, the deferred step runs --
-        // and it sees the queued start block, which is the whole point of the
-        // fix: before it, step() ran against an empty queue and advanced nothing.
+        // and it sees the queued start block, preventing step() from running
+        // against an empty queue and advancing nothing.
         jest.runAllTimers();
         expect(activity.logo.step).toHaveBeenCalledTimes(1);
         expect(queueSeenByStep).toEqual([{ turtle0: [1] }]);
