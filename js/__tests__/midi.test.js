@@ -1050,7 +1050,7 @@ describe("transcribeMidi", () => {
             expect(midTrackTempoChanges(blocks).map(t => t.quarterNotesPerMinute)).toEqual([120]);
             expect(noteValues(blocks)).toEqual(["1/4", "1/4", "1/4", "1/4", "1/2"]);
 
-            // Playback timing is unchanged by the fix: each note still plays for as long as
+            // Playback timing is unchanged: each note still plays for as long as
             // it does in the file, just against the tempo actually in force at that point.
             const tempos = [60, 60, 120, 120, 120];
             const seconds = noteValues(blocks).map((value, i) => {
