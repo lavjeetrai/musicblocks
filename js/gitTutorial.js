@@ -31,31 +31,45 @@
  *   - Re-visiting a slide always restarts the video from the beginning.
  */
 const GitTutorial = (() => {
-    // ── Phosphor icon SVGs (only the 5 used in this tutorial) ────────────────────────
+    // ── Phosphor icon definitions (only the 5 used in this tutorial) ──────────────────
     // Source: https://phosphoricons.com  (MIT licence)
-    // Each helper returns a self-contained <svg> string at 1em × 1em.
-    const ICONS = {
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const ICON_PATHS = {
         /** MapPin — “Track my project” */
-        mapPin: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M128 16a96 96 0 1 0 96 96A96.11 96.11 0 0 0 128 16Zm0 56a40 40 0 1 1-40 40 40 40 0 0 1 40-40Zm0 176a95.61 95.61 0 0 1-64-24.44V216a8 8 0 0 0 8 8h112a8 8 0 0 0 8-8v-12.44A95.61 95.61 0 0 1 128 248Z"/>
-        </svg>`,
+        mapPin: "M128 16a96 96 0 1 0 96 96A96.11 96.11 0 0 0 128 16Zm0 56a40 40 0 1 1-40 40 40 40 0 0 1 40-40Zm0 176a95.61 95.61 0 0 1-64-24.44V216a8 8 0 0 0 8 8h112a8 8 0 0 0 8-8v-12.44A95.61 95.61 0 0 1 128 248Z",
         /** Camera — “Mark this moment” */
-        camera: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M208 56h-27.31l-14.73-22.09A8 8 0 0 0 160 32H96a8 8 0 0 0-6.68 3.57L74.06 56H48a24 24 0 0 0-24 24v112a24 24 0 0 0 24 24h160a24 24 0 0 0 24-24V80a24 24 0 0 0-24-24Zm8 136a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8V80a8 8 0 0 1 8-8h32a8 8 0 0 0 6.68-3.57L101.06 48h53.88l14.38 20.43A8 8 0 0 0 176 72h32a8 8 0 0 1 8 8ZM128 88a44 44 0 1 0 44 44 44.05 44.05 0 0 0-44-44Zm0 72a28 28 0 1 1 28-28 28 28 0 0 1-28 28Z"/>
-        </svg>`,
+        camera: "M208 56h-27.31l-14.73-22.09A8 8 0 0 0 160 32H96a8 8 0 0 0-6.68 3.57L74.06 56H48a24 24 0 0 0-24 24v112a24 24 0 0 0 24 24h160a24 24 0 0 0 24-24V80a24 24 0 0 0-24-24Zm8 136a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8V80a8 8 0 0 1 8-8h32a8 8 0 0 0 6.68-3.57L101.06 48h53.88l14.38 20.43A8 8 0 0 0 176 72h32a8 8 0 0 1 8 8ZM128 88a44 44 0 1 0 44 44 44.05 44.05 0 0 0-44-44Zm0 72a28 28 0 1 1 28-28 28 28 0 0 1-28 28Z",
         /** ClockCounterClockwise — “Time travel” */
-        clock: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M136 80v43.47l36.12 21.67a8 8 0 0 1-8.24 13.72l-40-24A8 8 0 0 1 120 128V80a8 8 0 0 1 16 0Zm-8-48A96 96 0 0 0 47.08 60H32a8 8 0 0 0 0 16H72a8 8 0 0 0 8-8V28a8 8 0 0 0-16 0v13.22A80 80 0 1 1 48 128a8 8 0 0 0-16 0 96 96 0 1 0 96-96Z"/>
-        </svg>`,
+        clock: "M136 80v43.47l36.12 21.67a8 8 0 0 1-8.24 13.72l-40-24A8 8 0 0 1 120 128V80a8 8 0 0 1 16 0Zm-8-48A96 96 0 0 0 47.08 60H32a8 8 0 0 0 0 16H72a8 8 0 0 0 8-8V28a8 8 0 0 0-16 0v13.22A80 80 0 1 1 48 128a8 8 0 0 0-16 0 96 96 0 1 0 96-96Z",
         /** GitFork — “Remix from Planet” */
-        gitFork: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M236 64a28 28 0 1 0-36 26.87V96a20 20 0 0 1-20 20h-44V90.87a28 28 0 1 0-16 0V116H76a20 20 0 0 1-20-20v-5.13a28 28 0 1 0-16 0V96a36 36 0 0 0 36 36h44v33.13a28 28 0 1 0 16 0V132h44a36 36 0 0 0 36-36v-5.13A28 28 0 0 0 236 64ZM56 64a12 12 0 1 1 12 12 12 12 0 0 1-12-12Zm72 128a12 12 0 1 1-12-12 12 12 0 0 1 12 12ZM116 64a12 12 0 1 1 12 12 12 12 0 0 1-12-12Zm72 12a12 12 0 1 1 12-12 12 12 0 0 1-12 12Z"/>
-        </svg>`,
+        gitFork:
+            "M236 64a28 28 0 1 0-36 26.87V96a20 20 0 0 1-20 20h-44V90.87a28 28 0 1 0-16 0V116H76a20 20 0 0 1-20-20v-5.13a28 28 0 1 0-16 0V96a36 36 0 0 0 36 36h44v33.13a28 28 0 1 0 16 0V132h44a36 36 0 0 0 36-36v-5.13A28 28 0 0 0 236 64ZM56 64a12 12 0 1 1 12 12 12 12 0 0 1-12-12Zm72 128a12 12 0 1 1-12-12 12 12 0 0 1 12 12ZM116 64a12 12 0 1 1 12 12 12 12 0 0 1-12-12Zm72 12a12 12 0 1 1 12-12 12 12 0 0 1-12 12Z",
         /** Lightbulb — tips & header */
-        lightbulb: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
-            <path d="M176 232a8 8 0 0 1-8 8H88a8 8 0 0 1 0-16h80a8 8 0 0 1 8 8Zm40-128a88 88 0 0 1-32.63 68.78C179.74 177.42 176 188.21 176 200v4a16 16 0 0 1-16 16H96a16 16 0 0 1-16-16v-4c0-11.72-3.56-22.41-7.11-27.34A88 88 0 1 1 216 104Zm-16 0a72 72 0 1 0-124.57 48.8C80.14 159.69 85 173.05 96 200h64c11-26.91 15.88-40.21 20.6-47.25A71.74 71.74 0 0 0 200 104Z"/>
-        </svg>`
+        lightbulb:
+            "M176 232a8 8 0 0 1-8 8H88a8 8 0 0 1 0-16h80a8 8 0 0 1 8 8Zm40-128a88 88 0 0 1-32.63 68.78C179.74 177.42 176 188.21 176 200v4a16 16 0 0 1-16 16H96a16 16 0 0 1-16-16v-4c0-11.72-3.56-22.41-7.11-27.34A88 88 0 1 1 216 104Zm-16 0a72 72 0 1 0-124.57 48.8C80.14 159.69 85 173.05 96 200h64c11-26.91 15.88-40.21 20.6-47.25A71.74 71.74 0 0 0 200 104Z"
     };
+
+    /**
+     * Safely constructs an SVG icon element.
+     * @param {string} iconKey
+     * @returns {SVGElement}
+     */
+    function _createIcon(iconKey) {
+        const pathData = ICON_PATHS[iconKey];
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("xmlns", SVG_NS);
+        svg.setAttribute("width", "1em");
+        svg.setAttribute("height", "1em");
+        svg.setAttribute("viewBox", "0 0 256 256");
+        svg.setAttribute("fill", "currentColor");
+        svg.setAttribute("aria-hidden", "true");
+        if (pathData) {
+            const path = document.createElementNS(SVG_NS, "path");
+            path.setAttribute("d", pathData);
+            svg.appendChild(path);
+        }
+        return svg;
+    }
 
     // ── Step definitions ──────────────────────────────────────────────────────
     const STEPS = [
@@ -155,9 +169,7 @@ const GitTutorial = (() => {
             if (e.target === overlayEl) close();
         });
 
-        const shell = document.createElement("div");
-        shell.id = "git-tutorial-shell";
-        shell.innerHTML = _shellHTML();
+        const shell = _buildShell();
         overlayEl.appendChild(shell);
         document.body.appendChild(overlayEl);
 
@@ -168,96 +180,277 @@ const GitTutorial = (() => {
         _activateStepMedia(0);
     }
 
-    // ── HTML ──────────────────────────────────────────────────────────────────
-    function _shellHTML() {
-        const dotsHTML = Array.from(
-            { length: TOTAL },
-            (_, i) => `<span class="gt-dot" data-i="${i}"></span>`
-        ).join("");
+    /**
+     * Safely parses and appends formatted text containing <br>, <strong>, and <em> tags
+     * to a target DOM element without innerHTML.
+     * @param {HTMLElement} targetEl
+     * @param {string} text
+     */
+    function _appendFormattedText(targetEl, text) {
+        const parts = text.split(/(<br\s*\/?>|<strong>.*?<\/strong>|<em>.*?<\/em>)/g);
+        for (const part of parts) {
+            if (!part) continue;
+            if (/^<br\s*\/?>$/i.test(part)) {
+                targetEl.appendChild(document.createElement("br"));
+            } else if (/^<strong>(.*?)<\/strong>$/i.test(part)) {
+                const strong = document.createElement("strong");
+                strong.textContent = part.replace(/^<strong>|<\/strong>$/gi, "");
+                targetEl.appendChild(strong);
+            } else if (/^<em>(.*?)<\/em>$/i.test(part)) {
+                const em = document.createElement("em");
+                em.textContent = part.replace(/^<em>|<\/em>$/gi, "");
+                targetEl.appendChild(em);
+            } else {
+                targetEl.appendChild(document.createTextNode(part));
+            }
+        }
+    }
 
-        const stepsHTML = STEPS.map(
-            (s, i) => `
-            <div class="gt-step" id="gt-step-${i}" aria-hidden="${i !== 0}">
-                <div class="gt-left">
-                    <div class="gt-chip">${ICONS[s.chipIcon]}${s.chip}</div>
-                    <div class="gt-heading">${s.heading}</div>
-                    <div class="gt-body-text">${s.body}</div>
-                    <div class="gt-tip">
-                        <span class="gt-tip-icon">${ICONS.lightbulb}</span>
-                        <span>${s.tip}</span>
-                    </div>
-                </div>
-                <div class="gt-right">
-                    ${_mediaHTML(s.media, i)}
-                </div>
-            </div>`
-        ).join("");
+    function _buildShell() {
+        const shell = document.createElement("div");
+        shell.id = "git-tutorial-shell";
 
-        return `
-            <div id="gt-topbar">
-                <div id="gt-topbar-left">
-                    <span id="gt-bulb">${ICONS.lightbulb}</span>
-                    <span>Git Tutorial</span>
-                </div>
-                <div id="gt-dots">${dotsHTML}</div>
-                <div id="gt-close">&#10005; Close</div>
-            </div>
+        // Topbar
+        const topbar = document.createElement("div");
+        topbar.id = "gt-topbar";
 
-            <div id="gt-title-bar">
-                <div id="gt-step-num">Step 1 of ${TOTAL}</div>
-                <div id="gt-step-title"></div>
-            </div>
+        const topbarLeft = document.createElement("div");
+        topbarLeft.id = "gt-topbar-left";
 
-            <div id="gt-body">
-                <button id="gt-prev" aria-label="Previous">&#8592;</button>
-                <div id="gt-steps-wrap">${stepsHTML}</div>
-                <button id="gt-next-arrow" aria-label="Next">&#8594;</button>
-            </div>
+        const bulbSpan = document.createElement("span");
+        bulbSpan.id = "gt-bulb";
+        bulbSpan.appendChild(_createIcon("lightbulb"));
+        topbarLeft.appendChild(bulbSpan);
 
-            <div id="gt-footer">
-                <div id="gt-prog-label">1 / ${TOTAL}</div>
-                <div id="gt-prog-track"><div id="gt-prog-fill"></div></div>
-                <button id="gt-next-btn">Next &#8594;</button>
-            </div>`;
+        const topbarTitle = document.createElement("span");
+        topbarTitle.textContent = "Git Tutorial";
+        topbarLeft.appendChild(topbarTitle);
+        topbar.appendChild(topbarLeft);
+
+        const dotsContainer = document.createElement("div");
+        dotsContainer.id = "gt-dots";
+        for (let i = 0; i < TOTAL; i++) {
+            const dot = document.createElement("span");
+            dot.className = "gt-dot";
+            dot.dataset.i = i;
+            dotsContainer.appendChild(dot);
+        }
+        topbar.appendChild(dotsContainer);
+
+        const closeBtn = document.createElement("div");
+        closeBtn.id = "gt-close";
+        closeBtn.textContent = "\u2715 Close";
+        topbar.appendChild(closeBtn);
+        shell.appendChild(topbar);
+
+        // Title bar
+        const titleBar = document.createElement("div");
+        titleBar.id = "gt-title-bar";
+
+        const stepNum = document.createElement("div");
+        stepNum.id = "gt-step-num";
+        stepNum.textContent = `Step 1 of ${TOTAL}`;
+        titleBar.appendChild(stepNum);
+
+        const stepTitle = document.createElement("div");
+        stepTitle.id = "gt-step-title";
+        titleBar.appendChild(stepTitle);
+        shell.appendChild(titleBar);
+
+        // Body
+        const body = document.createElement("div");
+        body.id = "gt-body";
+
+        const prevBtn = document.createElement("button");
+        prevBtn.id = "gt-prev";
+        prevBtn.setAttribute("aria-label", "Previous");
+        prevBtn.textContent = "\u2190";
+        body.appendChild(prevBtn);
+
+        const stepsWrap = document.createElement("div");
+        stepsWrap.id = "gt-steps-wrap";
+
+        STEPS.forEach((s, i) => {
+            const stepEl = document.createElement("div");
+            stepEl.className = "gt-step";
+            stepEl.id = `gt-step-${i}`;
+            stepEl.setAttribute("aria-hidden", i !== 0 ? "true" : "false");
+
+            const gtLeft = document.createElement("div");
+            gtLeft.className = "gt-left";
+
+            const chip = document.createElement("div");
+            chip.className = "gt-chip";
+            chip.appendChild(_createIcon(s.chipIcon));
+            chip.appendChild(document.createTextNode(s.chip));
+            gtLeft.appendChild(chip);
+
+            const heading = document.createElement("div");
+            heading.className = "gt-heading";
+            heading.textContent = s.heading;
+            gtLeft.appendChild(heading);
+
+            const bodyText = document.createElement("div");
+            bodyText.className = "gt-body-text";
+            _appendFormattedText(bodyText, s.body);
+            gtLeft.appendChild(bodyText);
+
+            const tip = document.createElement("div");
+            tip.className = "gt-tip";
+
+            const tipIcon = document.createElement("span");
+            tipIcon.className = "gt-tip-icon";
+            tipIcon.appendChild(_createIcon("lightbulb"));
+            tip.appendChild(tipIcon);
+
+            const tipText = document.createElement("span");
+            tipText.textContent = s.tip;
+            tip.appendChild(tipText);
+
+            gtLeft.appendChild(tip);
+            stepEl.appendChild(gtLeft);
+
+            const gtRight = document.createElement("div");
+            gtRight.className = "gt-right";
+            gtRight.appendChild(_buildMedia(s.media, i));
+            stepEl.appendChild(gtRight);
+
+            stepsWrap.appendChild(stepEl);
+        });
+
+        body.appendChild(stepsWrap);
+
+        const nextArrow = document.createElement("button");
+        nextArrow.id = "gt-next-arrow";
+        nextArrow.setAttribute("aria-label", "Next");
+        nextArrow.textContent = "\u2192";
+        body.appendChild(nextArrow);
+
+        shell.appendChild(body);
+
+        // Footer
+        const footer = document.createElement("div");
+        footer.id = "gt-footer";
+
+        const progLabel = document.createElement("div");
+        progLabel.id = "gt-prog-label";
+        progLabel.textContent = `1 / ${TOTAL}`;
+        footer.appendChild(progLabel);
+
+        const progTrack = document.createElement("div");
+        progTrack.id = "gt-prog-track";
+
+        const progFill = document.createElement("div");
+        progFill.id = "gt-prog-fill";
+        progTrack.appendChild(progFill);
+        footer.appendChild(progTrack);
+
+        const nextBtn = document.createElement("button");
+        nextBtn.id = "gt-next-btn";
+        nextBtn.textContent = "Next \u2192";
+        footer.appendChild(nextBtn);
+
+        shell.appendChild(footer);
+
+        return shell;
     }
 
     /**
-     * Returns the HTML for a step's media area.
+     * Builds and returns the DOM element for a step's media area.
      * For videos, wraps the <video> in a .gt-player container with custom
      * overlay controls: a play/pause button and a scrubber timeline.
      *
      * @param {object} media  - { type, src, alt? }
      * @param {number} stepIndex - used to give controls unique IDs
-     * @returns {string} HTML string
+     * @returns {HTMLElement} DOM element
      */
-    function _mediaHTML(media, stepIndex) {
+    function _buildMedia(media, stepIndex) {
         if (media.type === "video") {
-            // loop attribute → video replays automatically.
-            // Controls are rendered below the video (not native browser controls).
-            return `
-                <div class="gt-player" id="gt-player-${stepIndex}">
-                    <video class="gt-video" id="gt-video-${stepIndex}"
-                           muted playsinline preload="auto" loop>
-                        <source src="${media.src}" type="video/mp4">
-                    </video>
-                    <div class="gt-controls" id="gt-controls-${stepIndex}">
-                        <button class="gt-play-btn" id="gt-play-btn-${stepIndex}"
-                                aria-label="Play / Pause">
-                            <svg class="gt-icon-play"  viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-                            <svg class="gt-icon-pause" viewBox="0 0 24 24" style="display:none">
-                                <rect x="5" y="3" width="4" height="18"/>
-                                <rect x="15" y="3" width="4" height="18"/>
-                            </svg>
-                        </button>
-                        <div class="gt-timeline" id="gt-timeline-${stepIndex}" role="slider"
-                             aria-label="Video timeline" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                            <div class="gt-timeline-fill" id="gt-fill-${stepIndex}"></div>
-                            <div class="gt-timeline-thumb" id="gt-thumb-${stepIndex}"></div>
-                        </div>
-                    </div>
-                </div>`;
+            const player = document.createElement("div");
+            player.className = "gt-player";
+            player.id = `gt-player-${stepIndex}`;
+
+            const video = document.createElement("video");
+            video.className = "gt-video";
+            video.id = `gt-video-${stepIndex}`;
+            video.muted = true;
+            video.playsInline = true;
+            video.preload = "auto";
+            video.loop = true;
+
+            const source = document.createElement("source");
+            source.src = media.src;
+            source.type = "video/mp4";
+            video.appendChild(source);
+            player.appendChild(video);
+
+            const controls = document.createElement("div");
+            controls.className = "gt-controls";
+            controls.id = `gt-controls-${stepIndex}`;
+
+            const playBtn = document.createElement("button");
+            playBtn.className = "gt-play-btn";
+            playBtn.id = `gt-play-btn-${stepIndex}`;
+            playBtn.setAttribute("aria-label", "Play / Pause");
+
+            const playSvg = document.createElementNS(SVG_NS, "svg");
+            playSvg.setAttribute("class", "gt-icon-play");
+            playSvg.setAttribute("viewBox", "0 0 24 24");
+            const playPoly = document.createElementNS(SVG_NS, "polygon");
+            playPoly.setAttribute("points", "5,3 19,12 5,21");
+            playSvg.appendChild(playPoly);
+            playBtn.appendChild(playSvg);
+
+            const pauseSvg = document.createElementNS(SVG_NS, "svg");
+            pauseSvg.setAttribute("class", "gt-icon-pause");
+            pauseSvg.setAttribute("viewBox", "0 0 24 24");
+            pauseSvg.style.display = "none";
+            const pauseRect1 = document.createElementNS(SVG_NS, "rect");
+            pauseRect1.setAttribute("x", "5");
+            pauseRect1.setAttribute("y", "3");
+            pauseRect1.setAttribute("width", "4");
+            pauseRect1.setAttribute("height", "18");
+            const pauseRect2 = document.createElementNS(SVG_NS, "rect");
+            pauseRect2.setAttribute("x", "15");
+            pauseRect2.setAttribute("y", "3");
+            pauseRect2.setAttribute("width", "4");
+            pauseRect2.setAttribute("height", "18");
+            pauseSvg.appendChild(pauseRect1);
+            pauseSvg.appendChild(pauseRect2);
+            playBtn.appendChild(pauseSvg);
+
+            controls.appendChild(playBtn);
+
+            const timeline = document.createElement("div");
+            timeline.className = "gt-timeline";
+            timeline.id = `gt-timeline-${stepIndex}`;
+            timeline.setAttribute("role", "slider");
+            timeline.setAttribute("aria-label", "Video timeline");
+            timeline.setAttribute("aria-valuemin", "0");
+            timeline.setAttribute("aria-valuemax", "100");
+            timeline.setAttribute("aria-valuenow", "0");
+
+            const fill = document.createElement("div");
+            fill.className = "gt-timeline-fill";
+            fill.id = `gt-fill-${stepIndex}`;
+            timeline.appendChild(fill);
+
+            const thumb = document.createElement("div");
+            thumb.className = "gt-timeline-thumb";
+            thumb.id = `gt-thumb-${stepIndex}`;
+            timeline.appendChild(thumb);
+
+            controls.appendChild(timeline);
+            player.appendChild(controls);
+
+            return player;
         }
-        return `<img class="gt-img" src="${media.src}" alt="${media.alt || ""}">`;
+
+        const img = document.createElement("img");
+        img.className = "gt-img";
+        img.src = media.src;
+        img.alt = media.alt || "";
+        return img;
     }
 
     // ── Wire all events ────────────────────────────────────────────────────────

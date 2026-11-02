@@ -143,4 +143,38 @@ describe("GitTutorial - 4-Step Interactive Guide", () => {
         expect(styleEl.textContent).toContain("@media (max-height: 640px)");
         expect(styleEl.textContent).toContain("margin: 0 auto;");
     });
+
+    test("renders DOM hierarchy safely without invoking innerHTML setter", () => {
+        const innerHTMLSpy = jest.spyOn(Element.prototype, "innerHTML", "set");
+
+        GitTutorial.open(mockActivity);
+
+        expect(innerHTMLSpy).not.toHaveBeenCalled();
+
+        const shell = document.getElementById("git-tutorial-shell");
+        expect(shell).not.toBeNull();
+
+        // Check topbar elements
+        const topbarTitle = shell.querySelector("#gt-topbar-left span:last-child");
+        expect(topbarTitle.textContent).toBe("Git Tutorial");
+
+        const bulbIcon = shell.querySelector("#gt-bulb svg");
+        expect(bulbIcon).not.toBeNull();
+        expect(bulbIcon.getAttribute("viewBox")).toBe("0 0 256 256");
+
+        // Check steps elements and safe inline formatting
+        const step0 = shell.querySelector("#gt-step-0");
+        expect(step0.querySelector(".gt-heading").textContent).toBe("Save your project!");
+
+        const step0Body = step0.querySelector(".gt-body-text");
+        expect(step0Body.querySelectorAll("strong").length).toBeGreaterThan(0);
+        expect(step0Body.querySelectorAll("br").length).toBeGreaterThan(0);
+
+        const step3 = shell.querySelector("#gt-step-3");
+        const step3Img = step3.querySelector("img.gt-img");
+        expect(step3Img).not.toBeNull();
+        expect(step3Img.src).toContain("images/fork_planet.png");
+
+        innerHTMLSpy.mockRestore();
+    });
 });
