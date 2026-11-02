@@ -31,6 +31,9 @@ describe("MBDialog", () => {
         document.body.innerHTML = "";
         document.body.className = "";
 
+        // Reset translation mock
+        delete window._;
+
         // Mock matchMedia
         Object.defineProperty(window, "matchMedia", {
             writable: true,
@@ -52,14 +55,15 @@ describe("MBDialog", () => {
             setItem: jest.fn(),
             clear: jest.fn()
         };
-        Object.defineProperty(window, "localStorage", { value: localStorageMock });
+        Object.defineProperty(window, "localStorage", { value: localStorageMock, writable: true });
 
-        // Mock requestAnimationFrame and cancelAnimationFrame
+        // Mock requestAnimationFrame and cancelAnimationFrame asynchronously to match browser behavior
         window.requestAnimationFrame = jest.fn().mockImplementation(cb => {
-            cb();
-            return 1;
+            return setTimeout(cb, 0);
         });
-        window.cancelAnimationFrame = jest.fn();
+        window.cancelAnimationFrame = jest.fn().mockImplementation(id => {
+            clearTimeout(id);
+        });
     });
 
     afterEach(() => {
@@ -169,12 +173,39 @@ describe("MBDialog", () => {
             const promptPromise = window.MBDialog.prompt({ defaultValue: "Typing..." });
 
             const input = document.querySelector("input[type='text']");
-            const enterEvent = new KeyboardEvent("keydown", { key: "Enter" });
+            const enterEvent = new KeyboardEvent("keydown", { key: "Enter", bubbles: true });
             input.dispatchEvent(enterEvent);
 
             const result = await promptPromise;
             expect(result).toBe("Typing...");
             expect(document.querySelector(".windowFrame")).toBeNull();
+        });
+
+        test("stops propagation of keyup and keypress events on prompt input", () => {
+            const originalPrompt = window.MBDialog.prompt;
+
+            // Use prompt() with empty options and test keyup/keypress stopping propagation
+            const promptPromise = originalPrompt();
+            const input = document.querySelector("input[type='text']");
+
+            const keyupSpy = jest.fn();
+            const keypressSpy = jest.fn();
+            document.addEventListener("keyup", keyupSpy);
+            document.addEventListener("keypress", keypressSpy);
+
+            input.dispatchEvent(new KeyboardEvent("keyup", { bubbles: true }));
+            input.dispatchEvent(new KeyboardEvent("keypress", { bubbles: true }));
+
+            expect(keyupSpy).not.toHaveBeenCalled();
+            expect(keypressSpy).not.toHaveBeenCalled();
+
+            document.removeEventListener("keyup", keyupSpy);
+            document.removeEventListener("keypress", keypressSpy);
+
+            // Clean up opened prompt
+            const cancelBtn = document.querySelector(".cancel-button");
+            if (cancelBtn) cancelBtn.click();
+            return promptPromise;
         });
 
         test("resolves with null when Cancel button is clicked", async () => {
@@ -239,9 +270,17 @@ describe("MBDialog", () => {
             expect(document.body.classList.contains("dark")).toBe(true);
             expect(document.body.classList.contains("light")).toBe(false);
         });
+
+        test("handles localStorage.getItem throwing an exception gracefully", () => {
+            window.localStorage.getItem.mockImplementation(() => {
+                throw new Error("QuotaExceeded or SecurityError");
+            });
+            window.MBDialog.alert("Storage error test");
+            expect(document.body.classList.contains("light")).toBe(true);
+        });
     });
 
-    describe("Dialog lifecycle constraints", () => {
+    describe("Dialog lifecycle constraints & DOM containers", () => {
         test("creating a new dialog removes active ones", () => {
             window.MBDialog.alert("First Alert");
             expect(document.querySelectorAll(".windowFrame").length).toBe(1);
@@ -250,10 +289,67 @@ describe("MBDialog", () => {
             expect(document.querySelectorAll(".windowFrame").length).toBe(1);
             expect(document.querySelector(".wfbWidget > div").textContent).toBe("Second Alert");
         });
+
+        test("attaches dialog to #floatingWindows if present", () => {
+            const fw = document.createElement("div");
+            fw.id = "floatingWindows";
+            document.body.appendChild(fw);
+
+            window.MBDialog.alert("Floating container test");
+            expect(fw.querySelector(".windowFrame")).toBeTruthy();
+            expect(fw.querySelector(".mb-dialog-overlay")).toBeTruthy();
+        });
+
+        test("prevents default on wheel events over the overlay", () => {
+            window.MBDialog.alert("Overlay wheel test");
+            const overlay = document.querySelector(".mb-dialog-overlay");
+            const wheelEvent = new MouseEvent("wheel", { cancelable: true });
+            const defaultPrevented = !overlay.dispatchEvent(wheelEvent);
+            expect(defaultPrevented).toBe(true);
+        });
+
+        test("recenters dialog on window resize", () => {
+            window.MBDialog.alert("Resize test");
+            const frame = document.querySelector(".windowFrame");
+            frame.getBoundingClientRect = jest.fn(() => ({
+                top: 0,
+                left: 0,
+                width: 200,
+                height: 100
+            }));
+            window.innerWidth = 800;
+            window.innerHeight = 600;
+
+            window.dispatchEvent(new Event("resize"));
+            expect(frame.style.left).toBe("300px"); // (800 - 200) / 2
+            expect(frame.style.top).toBe("250px"); // (600 - 100) / 2
+        });
+    });
+
+    describe("Internationalization (i18n)", () => {
+        test("translates default texts when window._ is available", () => {
+            window._ = jest.fn(key => {
+                if (key === "OK") return "D'accord";
+                if (key === "Cancel") return "Annuler";
+                if (key === "Close") return "Fermer";
+                return key;
+            });
+
+            window.MBDialog.prompt({});
+
+            const okBtn = document.querySelector(".confirm-button");
+            const cancelBtn = document.querySelector(".cancel-button");
+            const closeBtn = document.querySelector(".wftButton.close");
+
+            expect(okBtn.textContent).toBe("D'accord");
+            expect(cancelBtn.textContent).toBe("Annuler");
+            expect(closeBtn.title).toBe("Fermer");
+            expect(closeBtn.getAttribute("aria-label")).toBe("Fermer");
+        });
     });
 
     describe("Dragging functionality", () => {
-        test("allows dragging the dialog via the title bar", () => {
+        test("allows dragging the dialog via the title bar", done => {
             window.MBDialog.alert("Draggable Alert");
             const frame = document.querySelector(".windowFrame");
             const topBar = document.querySelector(".wfTopBar");
@@ -274,16 +370,132 @@ describe("MBDialog", () => {
             // Mouse move on document
             document.dispatchEvent(new MouseEvent("mousemove", { clientX: 200, clientY: 150 }));
 
-            // Dialog should have moved
-            expect(frame.style.left).toBe("150px"); // 100 + (200 - 150)
-            expect(frame.style.top).toBe("140px"); // 100 + (150 - 110)
+            setTimeout(() => {
+                // Dialog should have moved
+                expect(frame.style.left).toBe("150px"); // 100 + (200 - 150)
+                expect(frame.style.top).toBe("140px"); // 100 + (150 - 110)
 
-            // Mouse up stops dragging
+                // Mouse up stops dragging
+                document.dispatchEvent(new MouseEvent("mouseup"));
+
+                // Subsequent moves shouldn't affect position
+                document.dispatchEvent(new MouseEvent("mousemove", { clientX: 500, clientY: 500 }));
+
+                setTimeout(() => {
+                    expect(frame.style.left).toBe("150px");
+                    done();
+                }, 10);
+            }, 10);
+        });
+
+        test("does not initiate drag if mousedown targets a button inside topBar", done => {
+            window.MBDialog.alert("Button click in topBar");
+            const frame = document.querySelector(".windowFrame");
+            const closeBtn = document.querySelector(".wftButton.close");
+
+            frame.getBoundingClientRect = jest.fn(() => ({
+                top: 100,
+                left: 100,
+                width: 300,
+                height: 200
+            }));
+
+            closeBtn.dispatchEvent(
+                new MouseEvent("mousedown", { clientX: 100, clientY: 100, bubbles: true })
+            );
+
+            document.dispatchEvent(new MouseEvent("mousemove", { clientX: 200, clientY: 200 }));
+
+            setTimeout(() => {
+                // Position should not change from default
+                expect(frame.style.left).not.toBe("200px");
+                done();
+            }, 10);
+        });
+
+        test("cancels active animation frame if dragging ends while animation frame is pending", () => {
+            let rafCb = null;
+            window.requestAnimationFrame = jest.fn(cb => {
+                rafCb = cb;
+                return 42;
+            });
+
+            window.MBDialog.alert("Cancel RAF test");
+            const frame = document.querySelector(".windowFrame");
+            const topBar = document.querySelector(".wfTopBar");
+
+            frame.getBoundingClientRect = jest.fn(() => ({
+                top: 50,
+                left: 50,
+                width: 200,
+                height: 100
+            }));
+
+            topBar.dispatchEvent(
+                new MouseEvent("mousedown", { clientX: 60, clientY: 60, bubbles: true })
+            );
+            document.dispatchEvent(new MouseEvent("mousemove", { clientX: 70, clientY: 70 }));
+
+            // Mouseup while RAF is pending
             document.dispatchEvent(new MouseEvent("mouseup"));
+            expect(window.cancelAnimationFrame).toHaveBeenCalledWith(42);
 
-            // Subsequent moves shouldn't affect position
-            document.dispatchEvent(new MouseEvent("mousemove", { clientX: 500, clientY: 500 }));
-            expect(frame.style.left).toBe("150px");
+            // If the pending callback runs after dragging was set to false
+            if (rafCb) rafCb();
+            // Should not crash and position should remain clamped/unchanged
+        });
+
+        test("ignores mousemove if dragging is false", () => {
+            window.MBDialog.alert("Not dragging test");
+            const frame = document.querySelector(".windowFrame");
+            const initialLeft = frame.style.left;
+
+            document.dispatchEvent(new MouseEvent("mousemove", { clientX: 300, clientY: 300 }));
+            expect(frame.style.left).toBe(initialLeft);
+        });
+
+        test("clamps dragging position within window bounds", done => {
+            window.innerWidth = 500;
+            window.innerHeight = 400;
+
+            window.MBDialog.alert("Clamp test");
+            const frame = document.querySelector(".windowFrame");
+            const topBar = document.querySelector(".wfTopBar");
+
+            Object.defineProperty(frame, "offsetWidth", { value: 200, configurable: true });
+            Object.defineProperty(frame, "offsetHeight", { value: 100, configurable: true });
+
+            frame.getBoundingClientRect = jest.fn(() => ({
+                top: 100,
+                left: 100,
+                width: 200,
+                height: 100
+            }));
+
+            topBar.dispatchEvent(
+                new MouseEvent("mousedown", { clientX: 100, clientY: 100, bubbles: true })
+            );
+
+            // Drag far into negative space
+            document.dispatchEvent(new MouseEvent("mousemove", { clientX: -100, clientY: -100 }));
+
+            setTimeout(() => {
+                expect(frame.style.left).toBe("8px"); // clamp min 8
+                expect(frame.style.top).toBe("64px"); // clamp min 64
+
+                // Drag far beyond window bounds
+                document.dispatchEvent(
+                    new MouseEvent("mousemove", { clientX: 1000, clientY: 1000 })
+                );
+
+                setTimeout(() => {
+                    // maxLeft = 500 - 200 = 300
+                    // maxTop = 400 - 100 = 300
+                    expect(frame.style.left).toBe("300px");
+                    expect(frame.style.top).toBe("300px");
+                    done();
+                }, 10);
+            }, 10);
         });
     });
 });
