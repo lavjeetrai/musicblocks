@@ -277,7 +277,6 @@ class Singer {
         /** @deprecated */ this.attack = [];
         /** @deprecated */ this.decay = [];
         /** @deprecated */ this.sustain = [];
-        /** @deprecated */ this.release = [];
 
         // Parameters used by pitch
         this.scalarTransposition = 0;
