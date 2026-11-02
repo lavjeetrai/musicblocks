@@ -53,8 +53,8 @@ test("an unrelated status message (e.g. Alt-R Play) does not block ENTER-to-stop
     controller.__keyPressed(event);
     controller.dispose();
 
-    // Before the fix this failed: doHardStop was never called because the
-    // old printText.show guard returned early before ENTER's own handling ran.
+    // Previously, doHardStop was never called because the old
+    // printText.show guard returned early before ENTER's own handling ran.
     expect(doHardStop).toHaveBeenCalledTimes(1);
 });
 
