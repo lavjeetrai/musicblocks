@@ -114,3 +114,28 @@ describe("Activity workspace scrolling", () => {
         expect(activity.refreshCanvas).toHaveBeenCalled();
     });
 });
+
+describe("Activity storage initialization", () => {
+    test("initializes storage to localStorage when available", () => {
+        const mockStorage = { item: "testValue" };
+        const sandbox = loadActivitySandbox({
+            overrides: {
+                localStorage: mockStorage
+            }
+        });
+
+        expect(sandbox.activity.storage).toBe(mockStorage);
+    });
+
+    test("falls back to in-memory storage when localStorage access throws", () => {
+        const sandbox = loadActivitySandbox({
+            prependCode:
+                'Object.defineProperty(this, "localStorage", { get() { throw new DOMException("Access is denied", "SecurityError"); } });'
+        });
+
+        expect(sandbox.activity.storage).toEqual({});
+        // Verify in-memory storage functionality
+        sandbox.activity.storage.sampleKey = "sampleValue";
+        expect(sandbox.activity.storage.sampleKey).toBe("sampleValue");
+    });
+});
