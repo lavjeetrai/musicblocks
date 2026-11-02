@@ -919,10 +919,12 @@ function _processPart(partEl, blockId, chainPrevId, instrumentMap) {
 
             let hasTieStart = false;
             let hasTieStop = false;
-            for (const tieEl of child.querySelectorAll(":scope > tie")) {
-                const type = tieEl.getAttribute("type");
-                if (type === "start") hasTieStart = true;
-                if (type === "stop") hasTieStop = true;
+            for (let el = child.firstElementChild; el !== null; el = el.nextElementSibling) {
+                if (el.tagName === "tie") {
+                    const type = el.getAttribute("type");
+                    if (type === "start") hasTieStart = true;
+                    if (type === "stop") hasTieStop = true;
+                }
             }
 
             // Only a note that both has a tie stop and shares the open tie's
