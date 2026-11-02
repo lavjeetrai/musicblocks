@@ -275,7 +275,6 @@ class Singer {
 
         // Parameters used by envelope block
         /** @deprecated */ this.attack = [];
-        /** @deprecated */ this.decay = [];
         /** @deprecated */ this.sustain = [];
         /** @deprecated */ this.release = [];
 
